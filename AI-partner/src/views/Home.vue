@@ -41,7 +41,7 @@
         src="../assets/问卷.png"
         class="wenjuan-icon"
       />
-      <a-button type="dashed" danger style="font-size: 8px;">点击进入个性化定制</a-button>
+      <a-button type="dashed" danger style="font-size: 8px;" @click="into('customization')">点击进入个性化定制</a-button>
     </div>
     
     <!-- 文字内容 -->
@@ -58,8 +58,10 @@ import { Carousel } from 'ant-design-vue';
 import lottie from 'lottie-web'; // 引入 lottie-web
 import lottieJson from '../assets/animate/cat.json'; // 你的动画 JSON
 import { onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router'
 
 let animation = null;
+const router = useRouter()
 
 // 初始化 Lottie 动画
 function initLottie() {
@@ -79,7 +81,10 @@ function initLottie() {
     animationData: lottieJson, // 动画数据
   });
 }
-
+//路由跳转
+const into = (name) => {
+  router.push({name:name})
+}
 onMounted(() => {
   initLottie();
 });

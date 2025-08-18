@@ -102,6 +102,8 @@
 </template>
 
 <script>
+import { login } from '@/api/Login'
+
 export default {
   name: 'LoginPage',
   data() {
@@ -125,7 +127,7 @@ export default {
     },
     
     // 处理登录
-    handleLogin() {
+    async handleLogin() {
       if (!this.loginForm.username) {
         this.$toast('请输入用户名')
         return
@@ -138,7 +140,16 @@ export default {
       
       // 这里调用登录API
       console.log('登录信息:', this.loginForm)
+      const res =  await login(this.loginForm)
+      const token = res.data
+      console.log(res.data);
+      localStorage.setItem('token', token)
+      if (res.code==1) {
+        this.$router.push('/home') // 跳转到首页
+      }
       // this.$api.login(this.loginForm).then(...)
+      // const res1 = await test()
+      // console.log(res1);
     },
     
     // 处理注册

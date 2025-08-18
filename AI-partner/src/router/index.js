@@ -6,7 +6,8 @@ const routes = [
   { path: '/study', component: () => import('@/views/Study.vue'), name: 'study' },
   { path: '/ai', component: () => import('@/views/Ai.vue'), name: 'ai' },
   { path: '/profile', component: () => import('@/views/Profile.vue'), name: 'profile' },
-  { path: '/', redirect: '/login' } // 默认跳转首页
+  {path: '/customization', component: () => import('@/views/customization.vue'), name: 'customization' },
+  { path: '/', redirect: '/home' } // 默认跳转首页
 ]
 
 export const router = createRouter({
