@@ -7,6 +7,8 @@ const routes = [
   { path: '/ai', component: () => import('@/views/Ai.vue'), name: 'ai' },
   { path: '/profile', component: () => import('@/views/Profile.vue'), name: 'profile' },
   {path: '/customization', component: () => import('@/views/customization.vue'), name: 'customization' },
+  {path: '/success', component: () => import('@/components/success.vue'), name: 'success' },
+  {path: '/nodes', component: () => import('@/components/nodes.vue'), name: 'nodes' },
   { path: '/', redirect: '/home' } // 默认跳转首页
 ]
 
