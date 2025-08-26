@@ -3,8 +3,10 @@
       <a-typography-title :level="2" style="text-align: center; color: #1890ff; margin-bottom: 40px">
         📚 {{ subject }}的学习路径
       </a-typography-title>
-  
-      <a-timeline mode="center">
+
+      <LeftOutlined style="margin-left: 10px; margin-top: 10px;" @click="goBack" v-if="!showStatus" />
+
+      <a-timeline mode="center" v-if="showStatus">
         <a-timeline-item
           v-for="(item, index) in timelineItems"
           :key="index"
@@ -42,7 +44,7 @@
                   <strong>📌 说明：</strong>
                   <span>{{ item.description }}</span>
                 </div>
-  
+                
                 <!-- 按钮 -->
                 <div class="card-row" style="text-align: right; margin-top: 12px">
                   <a-button
@@ -59,17 +61,20 @@
           </div>
         </a-timeline-item>
       </a-timeline>
+
+      <router-view v-if="!showStatus"/>
     </div>
   </template>
   
   <script setup>
-  import { ref,onMounted } from "vue"
+  import { ref,onMounted,watch } from "vue"
   import { getNodes } from "@/api/Study"
   import { Typography, Timeline, Card, Button } from 'ant-design-vue';
   import { useRouter,useRoute } from 'vue-router'
 
   const router = useRouter()
   const route = useRoute()
+  const showStatus = ref(true)
   // 注册组件
   const ATypographyTitle = Typography.Title;
   const ATimeline = Timeline;
@@ -79,7 +84,17 @@
   const subject = route.query.subject
   onMounted(()=>{
     requestNode()
+    
   })
+  // 监听路由变化，模拟 "onShow"
+  // watch(
+  //   () => route.fullPath,
+  //   (newPath, oldPath) => {
+  //     console.log('页面重新显示（从 back() 返回）', newPath)
+  //     // 可在这里重新加载数据
+  //     requestNode()
+  //   }
+  // )
   // 学习路径数据（增强版）
   const timelineItems = ref([
     {
@@ -140,9 +155,18 @@
   // 模拟点击“进入学习”
   const handleStart = (item) => {
     console.log('🚀 开始学习:', item.title);
+    showStatus.value = false
     // 这里可以跳转页面，比如：
-    // router.push(`/study/${item.title}`)
+    router.push({
+      name:"video",
+      query:{
+      title:item.displayName
+    }
+  })
   };
+  const goBack = () =>{
+    showStatus.value = true
+  }
   </script>
   
   <style scoped>
