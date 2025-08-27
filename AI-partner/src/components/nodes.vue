@@ -4,7 +4,11 @@
         📚 {{ subject }}的学习路径
       </a-typography-title>
 
-      <LeftOutlined style="margin-left: 10px; margin-top: 10px;" @click="goBack" v-if="!showStatus" />
+
+      <!-- 返回按钮 -->
+      <div class="back-button" @click="goBack" style="cursor: pointer; margin-bottom: 16px;" v-if="!showStatus">
+        <LeftOutlined /> 返回
+      </div>
 
       <a-timeline mode="center" v-if="showStatus">
         <a-timeline-item
@@ -45,6 +49,37 @@
                   <span>{{ item.description }}</span>
                 </div>
                 
+                <!-- 学习进度条 -->
+                <div class="card-row" style="margin: 12px 0;">
+                  <strong>📊 学习进度：</strong>
+                  <a-progress
+                    :percent="Math.round(item.proficiency * 100)"
+                    :stroke-color="item.proficiency === 1 ? '#52c41a' : '#1890ff'"
+                    :size="['small']"
+                    :show-info="false"
+                    style="margin-top: 4px;"
+                  />
+                </div>
+              
+
+                <!-- 状态标签 -->
+                <div class="card-row" style="text-align: right;">
+                  <!-- 使用 v-if / v-else 切换标签 -->
+                  <a-tag
+                    v-if="item.proficiency === 1"
+                    color="success"
+                  >
+                    <CheckCircleOutlined/>已完结
+                  </a-tag>
+                
+                  <a-tag
+                    v-else
+                    color="default"
+                  >
+                    <MinusCircleOutlined/>待学习中
+                  </a-tag>
+                </div>
+
                 <!-- 按钮 -->
                 <div class="card-row" style="text-align: right; margin-top: 12px">
                   <a-button
@@ -68,10 +103,11 @@
   
   <script setup>
   import { ref,onMounted,watch } from "vue"
+  import { LeftOutlined, CheckCircleOutlined,MinusCircleOutlined } from '@ant-design/icons-vue';
   import { getNodes } from "@/api/Study"
   import { Typography, Timeline, Card, Button } from 'ant-design-vue';
   import { useRouter,useRoute } from 'vue-router'
-
+  
   const router = useRouter()
   const route = useRoute()
   const showStatus = ref(true)
@@ -84,23 +120,14 @@
   const subject = route.query.subject
   onMounted(()=>{
     requestNode()
-    
   })
-  // 监听路由变化，模拟 "onShow"
-  // watch(
-  //   () => route.fullPath,
-  //   (newPath, oldPath) => {
-  //     console.log('页面重新显示（从 back() 返回）', newPath)
-  //     // 可在这里重新加载数据
-  //     requestNode()
-  //   }
-  // )
   // 学习路径数据（增强版）
   const timelineItems = ref([
     {
       displayName: '路径1：离散数学',
       difficulty: 2,
       difficultyText: '中等',
+      proficiency:0.5,
       dayNum: 10,
       description: '学习集合、逻辑、图论等基础数学知识，为算法打下坚实基础。',
     },
@@ -108,6 +135,7 @@
       displayName: '路径2：数据结构与算法',
       difficulty: 3,
       difficultyText: '困难',
+      proficiency:0.3,
       dayNum: 21,
       description: '掌握数组、链表、栈、队列、树、图等结构及常见算法实现。',
     },
@@ -116,6 +144,7 @@
       difficulty: 1,
       difficultyText: '简单',
       dayNum: 14,
+      proficiency:1,
       description: '学习 HTML、CSS、JavaScript 和 Vue 基础，完成静态页面开发。',
     },
     {
@@ -170,6 +199,14 @@
   </script>
   
   <style scoped>
+  .back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1890ff;
+  font-size: 16px;
+  font-weight: 500;
+}
   .linear-timeline-container {
     padding: 40px 20px;
     background-color: #f8f9fa;

@@ -11,9 +11,12 @@ const routes = [
   {path: '/nodes', component: () => import('@/components/nodes.vue'), name: 'nodes' ,
   children:[{
     path: 'video', component: () => import('@/components/video.vue'), name: 'video' 
-  }]
+  },
+  {path: 'Play', component: () => import('@/components/PlanVideo.vue'), name: 'Play' },
+]
 },
   {path: '/test', component: () => import('@/views/test.vue'), name: 'test' },
+  // {path: '/Play', component: () => import('@/components/PlanVideo.vue'), name: 'Play' },
   { path: '/', redirect: '/home' } // 默认跳转首页
 ]
 
