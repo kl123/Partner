@@ -285,35 +285,41 @@ export default {
         // 调用API生成题目
         //需要修改的地方
         const response = await axios.post('http://localhost:8085/workflow/TestAIrun', requestData);
-         // 调试日志
-    console.log('API完整响应:', response);
-    console.log('response.data:', response.data);
         if (response.data && response.data.data) {
-          this.questions = response.data.data.map((questionText, index) => {
-            // 根据题目文本判断题型
-              let type = 'essay'; // 默认问答题
-              if (questionText.includes('判断题')) type = 'judgment';
-              else if (questionText.includes('选择题')) type = 'choice';
-    
-              questionText=questionText
+          const data=response.data.data;
+          const halfLength=Math.ceil(data.length/2);
+          this.questions=[];
+          for(let i=0;i<halfLength;i++){
+            let questionText=data[i];
+            let answerText=data[i+halfLength];
+            let type = 'essay'; // 默认问答题
+            if (questionText.includes('判断题')) type = 'judgment';
+            else if (questionText.includes('选择题')) type = 'choice';
+            answerText=answerText
+              .replace(/答案/g,'')
+              .replace(/；/g,'')
+              .replace(/：/g,'')
+            questionText=questionText
               .replace(/\n/g, '<br>')
               .replace(/\\\(/g, '  ')
+              .replace(/$/g, '  ')
               .replace(/\\\)/g, '  ');
-return {
-        id: index + 1,
-        text: questionText,
-        type: type,
-        userAnswer: null,
-        showAnswer: false,
-        isSubmitted: false,
-        options: ["选项A", "选项B", "选项C", "选项D"],
-        isCorrect: false
-    };
-    
-  }
-
-);
-} else {
+            let newquestion={
+                id: index + 1,
+                text: questionText,
+                type: type,
+                answer:answerText,
+                userAnswer: null,
+                showAnswer: false,
+                isSubmitted: false,
+                options: ["选项A", "选项B", "选项C", "选项D"],
+                isCorrect: false
+              }
+              // 解答题不自动判断正误
+            this.questions.push(newquestion)
+          }
+          
+      } else {
           // 模拟数据，实际使用时删除
           this.questions = this.generateMockQuestions();
         }
@@ -368,9 +374,9 @@ return {
       }));
     },
 
-    formatQuestionContent(txt) {
-      if (!txt) return '';
-      return txt.replace(/\n/g, '<br>');
+    formatQuestionContent(text) {
+      if (text) return '';
+      return text.replace(/\n/g, '<br>');
     },
 
     submitAnswer(question) {
