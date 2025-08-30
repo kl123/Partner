@@ -176,6 +176,7 @@
 </template>
 
 <script>
+import { addtest } from '../api/test';
 import axios from 'axios';
 
 export default {
@@ -318,7 +319,15 @@ export default {
         this.questions.userAnswer="D"
       }
       console.log(this.questions)
+
+      const res = await addtest(this.questions);
+      if (res.status === 200 || res.status === 201) {
+      console.log("上传成功:", res.data.message);
+      console.log("测试ID:", res.data.testId);
       this.showSuccessMessage('所有答案已提交');
+      // 这里可以执行成功后的操作，如跳转页面或显示成功消息
+  }else{this.showSuccessMessage('上传失败，请稍后重试');}
+      //上传答题情况
     },
     
     // 滚动到顶部
