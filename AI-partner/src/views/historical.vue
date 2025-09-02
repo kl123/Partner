@@ -40,11 +40,11 @@
         <h3>{{ stats.averageScore }}%</h3>
         <p>平均正确率</p>
       </div>
-      <!-- <div class="stat-card">
+      <div class="stat-card">
         <i class="fas fa-clock"></i>
-        <h3>{{ stats.totalTime }}</h3>
+        <h3>{{ stats.totalTime }}分钟</h3>
         <p>总学习时间</p>
-      </div> -->
+      </div>
       <!-- <div class="stat-card">
         <i class="fas fa-chart-line"></i>
         <h3>{{ stats.improvement }}%</h3>
@@ -60,14 +60,14 @@
       >
         <div class="card-header" :style="headerStyle(result.subject)">
           <h3>{{ result.testName }}</h3>
-          <!-- <p>{{ result.date }} · {{ subjectText(result.subject) }}</p> -->
+          <p>{{ result.date }} </p>
         </div>
         <div class="card-body">
-          <!-- <div class="score">{{ result.score }}分</div> -->
+          <div class="score">{{ result.score }}分</div>
           <ul class="details">
             <li>答题数: <span>{{ result.totalQuestions }}</span></li>
             <li>正确数: <span>{{ result.correctAnswers }}</span></li>
-            <!-- <li>用时: <span>{{ result.timeSpent }}</span></li> -->
+            <li>用时: <span>{{ result.timeSpent }}分钟</span></li>
           </ul>
         </div>
         <div class="card-footer">
@@ -85,11 +85,11 @@
         </div>
         <div class="modal-body">
           <div style="margin-bottom: 20px;">
-            <!-- <p><strong>日期:</strong> {{ selectedTest.date }}</p> -->
-            <!-- <p><strong>得分:</strong> {{ selectedTest.score }}分</p> -->
+            <p><strong>日期:</strong> {{ selectedTest.date }}</p>
+            <p><strong>得分:</strong> {{ selectedTest.score }}分</p>
             <p><strong>答题数:</strong> {{ selectedTest.totalQuestions }}</p>
             <p><strong>正确数:</strong> {{ selectedTest.correctAnswers }}</p>
-            <!-- <p><strong>用时:</strong> {{ selectedTest.timeSpent }}</p> -->
+            <p><strong>用时:</strong> {{ selectedTest.timeSpent }}分钟</p>
           </div>
           <h3>答题详情:</h3>
           <div 
@@ -113,10 +113,22 @@
 </template>
 
 <script>
-import { gettest } from '../api/test';
+import { onMounted } from "vue"
+import { gettest } from '@/api/test';
+import { getquestion } from '@/api/test';
+import axios from 'axios';
+    // const histest = await gettest();
+    // console.log(histest.data);
 //获取历史数据
-const histest = await gettest();
-console.log(histest);
+// const histest =async()=>{
+//   const res = await gettest()
+//   console.log(res);
+// }
+// onMounted(()=>{
+//   console.log("sadasda");
+  
+//   histest()
+// })
 //输出获取参数格式
 export default {
   name: 'HistoryResults',
@@ -283,6 +295,7 @@ export default {
       ]
     }
   },
+  
   computed: {
     
 
@@ -329,11 +342,12 @@ export default {
       return {
         totalTests,
         averageScore,
-        totalTime: '42h',
-        improvement: '+12%'
+        totalTime: this.testResults.reduce((sum, test) => sum + test.timeSpent, 0),
+        improvement: ''
       }
     }
   },
+  
   methods: {
     headerStyle(subject) {
       let subjectColor = '#6a11cb';
@@ -355,6 +369,7 @@ export default {
       
       return `background: linear-gradient(135deg, ${subjectColor} 0%, #2575fc 100%);`;
     },
+
     subjectText(subject) {
       switch(subject) {
         case 'math': return '数学';
@@ -370,7 +385,39 @@ export default {
     },
     closeModal() {
       this.showModal = false;
+    },
+    async fetchTestData() {
+      try {
+        const res = await gettest();
+        console.log(res.data);
+        this.testResults = [];
+        for(let i=0;i<res.data.length;i++){
+          // let res2 = await getquestion(res.data[i].testId);
+          // console.log(res2.data);
+          let newData={
+          id: i,
+          testName: res.data[i].title,
+          subject: "",
+          date: res.data[i].testTime.replace(/T/g,' '),
+          score: res.data[i].score,
+          totalQuestions: 0,
+          correctAnswers: 0,
+          timeSpent: res.data[i].duration,
+          // details: res2.data
+        }
+        this.testResults.push(newData);
+        }
+        // 假设API返回的数据在res.data中，根据实际情况调整
+        // this.testResults = res.data || [];
+      } catch (error) {
+        console.error("获取测试数据失败:", error);
+        // this.testResults = []; // 出错时设置为空数组
+      }
     }
+  },
+  
+  mounted() {
+    this.fetchTestData();
   }
 }
 </script>

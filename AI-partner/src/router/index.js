@@ -8,7 +8,10 @@ const routes = [
   { path: '/profile', component: () => import('@/views/Profile.vue'), name: 'profile' },
   {path: '/customization', component: () => import('@/views/customization.vue'), name: 'customization' },
   {path: '/success', component: () => import('@/components/success.vue'), name: 'success' },
-  {path: '/nodes', component: () => import('@/components/nodes.vue'), name: 'nodes' },
+  {path: '/nodes', component: () => import('@/components/nodes.vue'), name: 'nodes'},
+  { path: '/historical', component: () => import('@/views/historical.vue'), name: 'historical' },
+  {path: '/test', component: () => import('@/views/test.vue'), name: 'test' },
+  // {path: '/Play', component: () => import('@/components/PlanVideo.vue'), name: 'Play' },
   { path: '/', redirect: '/home' } // 默认跳转首页
 ]
 

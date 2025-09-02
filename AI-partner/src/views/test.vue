@@ -176,7 +176,7 @@
 </template>
 
 <script>
-import { addtest } from '../api/test';
+import { addtest } from '@/api/test';
 import axios from 'axios';
 
 export default {
@@ -320,7 +320,7 @@ export default {
       }
       console.log(this.questions)
 
-      const res = await addtest(this.questions);
+      // const res = await addtest(this.questions);
       if (res.status === 200 || res.status === 201) {
       console.log("上传成功:", res.data.message);
       console.log("测试ID:", res.data.testId);
