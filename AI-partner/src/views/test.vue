@@ -293,7 +293,7 @@ export default {
     },
 
     // 提交所有答案
-    submitAllAnswers() {
+    async submitAllAnswers() {
       const unanswered = this.questions.filter(q => 
         q.userAnswer === null || q.userAnswer === undefined || q.userAnswer === ''
       );
