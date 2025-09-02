@@ -16,3 +16,25 @@ export const getNodes = (data) => {
     pathId:data
   })
 }
+
+// 更新进度
+export const updateProgress = (data) => {
+  const pathStr = localStorage.getItem('pathId')
+  const conceptStr = localStorage.getItem('concept_id')
+
+  // 转为整数
+  const pathId = parseInt(pathStr, 10)
+  const concept_id = parseInt(conceptStr, 10)
+
+  // 可选：校验是否转换成功
+  if (isNaN(pathId) || isNaN(concept_id)) {
+    console.error('路径ID或概念ID无效:', { pathStr, conceptStr })
+    return Promise.reject(new Error('Invalid ID'))
+  }
+
+  return request.post('/IndividualPlaning/updateProgressOfTheLearningPath', {
+    pathId:pathId,      // 已是整数
+    concept_id:concept_id,  // 已是整数
+    progress: data
+  })
+}
