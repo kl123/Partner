@@ -16,8 +16,8 @@
         </select> -->
         
         <select v-model="filters.sortBy">
-          <!-- <option value="newest">最新优先</option> -->
-          <!-- <option value="oldest">最旧优先</option> -->
+          <option value="newest">最新优先</option>
+          <option value="oldest">最旧优先</option>
           <option value="highest">分数最高</option>
           <option value="lowest">分数最低</option>
         </select>
@@ -97,13 +97,14 @@
             v-for="(detail, index) in selectedTest.details" 
             :key="index"
           >
-            <p><strong>问题 {{ index + 1 }}:</strong> {{ detail.question }}</p>
+            <p><strong>问题 {{ detail.id }}:</strong> {{ detail.text }}</p>
+            <p><strong>题型:</strong> {{ detail.type }}</p>
             <p :class="detail.isCorrect ? 'correct' : 'incorrect'">
               <strong>你的答案:</strong> {{ detail.userAnswer }} 
               {{ detail.isCorrect ? '✓' : '✗' }}
             </p>
-            <p v-if="!detail.isCorrect">
-              <strong>正确答案:</strong> {{ detail.correctAnswer }}
+            <p>
+              <strong>正确答案:</strong> {{ detail.showAnswer }}
             </p>
           </div>
         </div>
@@ -117,18 +118,6 @@ import { onMounted } from "vue"
 import { gettest } from '@/api/test';
 import { getquestion } from '@/api/test';
 import axios from 'axios';
-    // const histest = await gettest();
-    // console.log(histest.data);
-//获取历史数据
-// const histest =async()=>{
-//   const res = await gettest()
-//   console.log(res);
-// }
-// onMounted(()=>{
-//   console.log("sadasda");
-  
-//   histest()
-// })
 //输出获取参数格式
 export default {
   name: 'HistoryResults',
@@ -389,21 +378,34 @@ export default {
     async fetchTestData() {
       try {
         const res = await gettest();
-        console.log(res.data);
         this.testResults = [];
         for(let i=0;i<res.data.length;i++){
-          // let res2 = await getquestion(res.data[i].testId);
-          // console.log(res2.data);
+          let T=0;
+          let res2 = await getquestion({"testId": String(res.data[i].testId)});
+          for(let j=0;j<res2.data.length;j++){
+            if(res2.data[j].type=="choice"){
+              res2.data[j].type="单选题";
+            }
+            else if(res2.data[j].type=="judgment"){
+              res2.data[j].type="判断题";
+            }
+            else if(res2.data[j].type=="essay"){
+              res2.data[j].type="填空题";
+            }
+            if(res2.data[j].isCorrect!=0){
+              T++;
+            }
+          }
           let newData={
           id: i,
           testName: res.data[i].title,
           subject: "",
           date: res.data[i].testTime.replace(/T/g,' '),
           score: res.data[i].score,
-          totalQuestions: 0,
-          correctAnswers: 0,
+          totalQuestions: res2.data.length,
+          correctAnswers: T,
           timeSpent: res.data[i].duration,
-          // details: res2.data
+          details: res2.data
         }
         this.testResults.push(newData);
         }
