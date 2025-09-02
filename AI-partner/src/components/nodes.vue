@@ -192,6 +192,10 @@
       title:item.displayName
     }
   })
+      //进行本地存储
+      localStorage.setItem('pathId', item.pathId)
+      localStorage.setItem('concept_id', item.conceptId)
+      localStorage.setItem('progress', item.proficiency)
   };
   const goBack = () =>{
     showStatus.value = true

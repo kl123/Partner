@@ -52,6 +52,8 @@
       >
     </div>
   </div>
+
+  
 </template>
 <script setup>
 import { Carousel } from 'ant-design-vue';
@@ -59,6 +61,7 @@ import lottie from 'lottie-web'; // 引入 lottie-web
 import lottieJson from '../assets/animate/cat.json'; // 你的动画 JSON
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router'
+import CozeChatBot from '@/components/CozeChatBot.vue'
 
 let animation = null;
 const router = useRouter()

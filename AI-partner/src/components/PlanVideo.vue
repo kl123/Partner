@@ -20,7 +20,7 @@
   <script setup>
   import { ref, onMounted, onUnmounted } from 'vue'
   import { useRoute } from 'vue-router'
-  
+  import { updateProgress } from "@/api/Study"
   const route = useRoute()
   const bvid = route.query.bvid
   
@@ -51,9 +51,22 @@
       clearInterval(timer.value)
       timer.value = null
       console.log('⏹️ 计时结束，总学习时间:', formatTime(totalDuration.value))
+      //进行进度更新
+      updateprogress()
     }
   }
   
+  //学习满1分钟进度更新+0.01
+  const updateprogress = async() => {
+    const min = Math.floor(totalDuration.value / 60)
+    // 从 localStorage 读取，并转为数字，如果为空则默认 0
+    let process = parseFloat(localStorage.getItem("progress")) || 0
+    if (process < 1) {
+      process += min*0.01
+      const res = await updateProgress(process)
+      console.log(res);
+    }
+  }
   // 页面加载完成：开始计时
   onMounted(() => {
     console.log('🎯 当前播放视频 BV号:', bvid)

@@ -1,4 +1,7 @@
 <template>
+  <div class="page">
+    <CozeChatBot />
+  </div>
   <div class="main">
     <router-view/>
   </div>
@@ -21,6 +24,7 @@
 import { ref ,computed} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { HomeOutlined, NodeIndexOutlined, AliwangwangOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import CozeChatBot from '@/components/CozeChatBot.vue'
 
 const router = useRouter()
 const route = useRoute()
