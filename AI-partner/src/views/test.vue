@@ -3,7 +3,6 @@
     <!-- 配置面板 -->
     <div class="config-panel glass-card">
       <h2 class="section-title">📝 题目生成配置</h2>
-      
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">📚 科目：</label>
@@ -93,14 +92,16 @@
     <!-- 题目展示区域 -->
     <div class="questions-container" v-else-if="questions.length > 0">
       <h2 class="section-title">📋 生成的题目</h2>
-      
-      <div v-for="(question, index) in questions" :key="index" class="question-card glass-card">
+      <div class="questions-actions">
+          
+        </div>
+      <div v-for="(question, index) in questions" :key="question.id" class="question-card glass-card">
         <div class="question-header">
-          <span class="question-number">{{ index + 1 }}</span>
+          <span class="question-number">{{ question.id }}</span>
           <!-- <span class="question-type" :class="getTypeClass(question.type)">{{ question.type }}</span> -->
         </div>
         
-        <div class="question-content" v-html="formatQuestionContent(question.text)"></div>
+        <div class="question-content" v-html="question.text"></div>
         
         <!-- 选择题选项 -->
         <div v-if="question.type === 'choice'" class="options-grid">
@@ -138,9 +139,20 @@
           
           <div v-if="question.showAnswer" class="answer-section">
             <h4 class="answer-title">📖 参考答案：</h4>
-            <div class="answer-content" v-html="formatQuestionContent(question.answer || '暂无参考答案')"></div>
+            <div class="answer-content" v-html="question.answer"></div>
           </div>
         </div>
+        </div>
+        <div class="footer-actions">
+          <button @click="saveProgress" class="save-btn secondary-btn">
+            💾 保存进度
+          </button>
+        <button @click="submitAllAnswers" class="submit-all-btn primary-btn">
+          📨 提交所有答案
+        </button>
+        <button @click="resetQuestions" class="reset-all-btn danger-btn">
+          🔄 重新生成题目
+        </button>
       </div>
     </div>
 
@@ -164,6 +176,7 @@
 </template>
 
 <script>
+import { addtest } from '../api/test';
 import axios from 'axios';
 
 export default {
@@ -172,11 +185,11 @@ export default {
     return {
       configData: {
         TorF: 1,
-        choice: 2,
+        choice: 1,
         description: "大学的微积分内容",
         difficulty: 3,
         display_name: "微分方程",
-        response: 3,
+        response: 1,
         subject: "数学"
       },
       errors: {
@@ -189,7 +202,10 @@ export default {
       },
       questions: [],
       loading: false,
-      error: ''
+      error: '',
+      showDebug: false,
+      // 新增：保存原始配置数据
+      originalConfig: null
     };
   },
   computed: {
@@ -206,6 +222,125 @@ export default {
     }
   },
   methods: {
+    // 重置题目方法
+    resetQuestions() {
+      // 1. 清空当前题目数组
+      this.questions = [];
+      
+      // 2. 重置加载状态和错误信息
+      this.loading = false;
+      this.error = '';
+      
+      // 3. 可选：重置配置表单到初始状态
+      if (this.originalConfig) {
+        this.configData = { ...this.originalConfig };
+      } else {
+        // 重置为默认值
+        this.configData = {
+          subject: "",
+          description: "",
+          display_name: "",
+          difficulty: 3,
+          choice: 0,
+          TorF: 0,
+          response: 0
+        };
+      }
+      
+      // 4. 可选：滚动到顶部
+      this.scrollToTop();
+      
+      // 5. 可选：显示重置成功消息
+      this.showSuccessMessage('题目已重置，可以重新生成新题目');
+    },
+
+    saveProgress() {
+      const progress = {
+        config: { ...this.configData },
+        questions: this.questions.map(q => ({
+          id: q.id,
+          userAnswer: q.userAnswer,
+          isSubmitted: q.isSubmitted
+        })),
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem('questionProgress', JSON.stringify(progress));
+      this.showSuccessMessage('进度已保存');
+    },
+    
+    // 加载保存的进度（可选功能）
+    loadProgress() {
+      const saved = localStorage.getItem('questionProgress');
+      if (saved) {
+        try {
+          const progress = JSON.parse(saved);
+          this.configData = progress.config;
+          // 可以提示用户是否加载进度
+          if (confirm('检测到保存的进度，是否加载？')) {
+            this.questions.forEach(q => {
+              const savedQ = progress.questions.find(sq => sq.id === q.id);
+              if (savedQ) {
+                q.userAnswer = savedQ.userAnswer;
+                q.isSubmitted = savedQ.isSubmitted;
+              }
+            });
+          }
+        } catch (e) {
+          console.error('加载进度失败', e);
+        }
+      }
+    },
+
+    // 提交所有答案
+    submitAllAnswers() {
+      const unanswered = this.questions.filter(q => 
+        q.userAnswer === null || q.userAnswer === undefined || q.userAnswer === ''
+      );
+      
+      if (unanswered.length > 0) {
+        if (!confirm(`还有 ${unanswered.length} 道题未作答，确定提交吗？`)) {
+          return;
+        }
+      }
+      
+      this.questions.forEach(question => {
+        if (!question.isSubmitted) {
+          this.submitAnswer(question);
+        }
+      });
+      if(this.questions.userAnswer===1){
+        this.questions.userAnswer="A"
+      }else if(this.questions.userAnswer===2){
+        this.questions.userAnswer="B"
+      }else if(this.questions.userAnswer===3){
+        this.questions.userAnswer="C"
+      }else if(this.questions.userAnswer===4){
+        this.questions.userAnswer="D"
+      }
+      console.log(this.questions)
+
+      const res = await addtest(this.questions);
+      if (res.status === 200 || res.status === 201) {
+      console.log("上传成功:", res.data.message);
+      console.log("测试ID:", res.data.testId);
+      this.showSuccessMessage('所有答案已提交');
+      // 这里可以执行成功后的操作，如跳转页面或显示成功消息
+  }else{this.showSuccessMessage('上传失败，请稍后重试');}
+      //上传答题情况
+    },
+    
+    // 滚动到顶部
+    scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    
+    // 显示成功消息
+    showSuccessMessage(message) {
+      // 可以集成一个消息提示系统
+      alert(message); // 简单实现，可以用更优雅的方式
+    },
+
     validateField(field) {
       switch (field) {
         case 'subject':
@@ -285,35 +420,47 @@ export default {
         // 调用API生成题目
         //需要修改的地方
         const response = await axios.post('http://localhost:8085/workflow/TestAIrun', requestData);
-         // 调试日志
-    console.log('API完整响应:', response);
-    console.log('response.data:', response.data);
         if (response.data && response.data.data) {
-          this.questions = response.data.data.map((questionText, index) => {
-            // 根据题目文本判断题型
-              let type = 'essay'; // 默认问答题
-              if (questionText.includes('判断题')) type = 'judgment';
-              else if (questionText.includes('选择题')) type = 'choice';
-    
-              questionText=questionText
+          console.log('API返回数据:', response.data);
+          const data=response.data.data;
+          const halfLength=Math.ceil(data.length/2);
+          this.questions=[];
+          for(let i=0;i<halfLength;i++){
+            let questionText=data[i];
+            let answerText=data[i+halfLength]||'';
+            let type = 'essay'; // 默认问答题
+            if (questionText.includes('判断题')) type = 'judgment';
+            else if (questionText.includes('选择题')) type = 'choice';
+            answerText=answerText
+              .replace(/答案/g,'')
+              .replace(/；/g,'')
+              .replace(/：/g,'')
               .replace(/\n/g, '<br>')
               .replace(/\\\(/g, '  ')
+              .replace(/$/g, '  ')
               .replace(/\\\)/g, '  ');
-return {
-        id: index + 1,
-        text: questionText,
-        type: type,
-        userAnswer: null,
-        showAnswer: false,
-        isSubmitted: false,
-        options: ["选项A", "选项B", "选项C", "选项D"],
-        isCorrect: false
-    };
-    
-  }
-
-);
-} else {
+            questionText=questionText
+              .replace(/\n/g, '<br>')
+              .replace(/\\\(/g, '  ')
+              .replace(/$/g, '  ')
+              .replace(/\\\)/g, '  ');
+            let newquestion={
+                id: i + 1,
+                text: questionText,
+                type: type,
+                answer:answerText,
+                userAnswer: null,
+                showAnswer: false,
+                isSubmitted: false,
+                options: type === 'choice' ? ["选项A", "选项B", "选项C", "选项D"] : [],
+                isCorrect: false
+              }
+              console.log(newquestion)
+            this.questions.push(newquestion)
+            console.log(this.questions)
+          }
+          
+      } else {
           // 模拟数据，实际使用时删除
           this.questions = this.generateMockQuestions();
         }
@@ -368,9 +515,9 @@ return {
       }));
     },
 
-    formatQuestionContent(txt) {
-      if (!txt) return '';
-      return txt.replace(/\n/g, '<br>');
+    formatQuestionContent(text) {
+      if (text) return '';
+      return text.replace(/\n/g, '<br>');
     },
 
     submitAnswer(question) {
@@ -398,13 +545,85 @@ return {
       };
       return typeClasses[type] || '';
     }
+  },
+  mounted() {
+    // 组件加载时尝试恢复进度
+    this.loadProgress();
   }
 };
 </script>
 
 <style scoped>
 /* 原有的所有样式保持不变，只添加错误样式 */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
 
+.reset-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.danger-btn {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  color: white;
+}
+
+.danger-btn:hover {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+}
+
+.questions-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.reset-questions-btn, .save-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 15px;
+}
+
+.submit-all-btn, .reset-all-btn {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .questions-actions {
+    flex-direction: column;
+  }
+  
+  .footer-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .submit-all-btn, .reset-all-btn {
+    width: 100%;
+  }
+}
 /** */
 .input-error {
   border-color: #f56565 !important;
