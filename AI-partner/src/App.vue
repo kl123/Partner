@@ -1,7 +1,8 @@
 <template>
   <div class="page">
-    <CozeChatBot />
-  </div>
+  <!-- 只在 AI 页面加载 CozeChatBot -->
+  <CozeChatBot v-if="route.path === '/ai'" />
+</div>
   <div class="main">
     <router-view/>
   </div>
@@ -101,4 +102,5 @@ const onTabClick = (key,path) => {
 .bottom span.active :deep(.icon-text-container span) {
   color: #13a9a9 !important;
 }
+
 </style>
