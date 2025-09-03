@@ -145,6 +145,7 @@ export default {
       console.log(res.data);
       localStorage.setItem('token', token)
       if (res.code==1) {
+        localStorage.setItem("username",this.$data.loginForm.username)
         this.$router.push('/home') // 跳转到首页
       }
       // this.$api.login(this.loginForm).then(...)
