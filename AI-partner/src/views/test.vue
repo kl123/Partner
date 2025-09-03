@@ -140,13 +140,17 @@
           <div v-if="question.showAnswer" class="answer-section">
             <h4 class="answer-title">📖 参考答案：</h4>
             <div class="answer-content" v-html="question.answer"></div>
+            <div v-if="question.isSubmitted" class="answer-feedback" 
+                 :class="{ correct: question.isCorrect, incorrect: !question.isCorrect }">
+              {{ question.isCorrect ? '✅ 您的答案正确！' : '❌ 您的答案不正确。' }}
+            </div>
           </div>
         </div>
         </div>
         <div class="footer-actions">
-          <button @click="saveProgress" class="save-btn secondary-btn">
+          <!-- <button @click="saveProgress" class="save-btn secondary-btn">
             💾 保存进度
-          </button>
+          </button> -->
         <button @click="submitAllAnswers" class="submit-all-btn primary-btn">
           📨 提交所有答案
         </button>
@@ -254,46 +258,46 @@ export default {
       this.showSuccessMessage('题目已重置，可以重新生成新题目');
     },
 
-    saveProgress() {
-      const progress = {
-        config: { ...this.configData },
-        questions: this.questions.map(q => ({
-          id: q.id,
-          userAnswer: q.userAnswer,
-          isSubmitted: q.isSubmitted
-        })),
-        timestamp: new Date().toISOString()
-      };
+    // saveProgress() {
+    //   const progress = {
+    //     config: { ...this.configData },
+    //     questions: this.questions.map(q => ({
+    //       id: q.id,
+    //       userAnswer: q.userAnswer,
+    //       isSubmitted: q.isSubmitted
+    //     })),
+    //     timestamp: new Date().toISOString()
+    //   };
       
-      localStorage.setItem('questionProgress', JSON.stringify(progress));
-      this.showSuccessMessage('进度已保存');
-    },
+    //   localStorage.setItem('questionProgress', JSON.stringify(progress));
+    //   this.showSuccessMessage('进度已保存');
+    // },
     
-    // 加载保存的进度（可选功能）
-    loadProgress() {
-      const saved = localStorage.getItem('questionProgress');
-      if (saved) {
-        try {
-          const progress = JSON.parse(saved);
-          this.configData = progress.config;
-          // 可以提示用户是否加载进度
-          if (confirm('检测到保存的进度，是否加载？')) {
-            this.questions.forEach(q => {
-              const savedQ = progress.questions.find(sq => sq.id === q.id);
-              if (savedQ) {
-                q.userAnswer = savedQ.userAnswer;
-                q.isSubmitted = savedQ.isSubmitted;
-              }
-            });
-          }
-        } catch (e) {
-          console.error('加载进度失败', e);
-        }
-      }
-    },
+    // // 加载保存的进度（可选功能）
+    // loadProgress() {
+    //   const saved = localStorage.getItem('questionProgress');
+    //   if (saved) {
+    //     try {
+    //       const progress = JSON.parse(saved);
+    //       this.configData = progress.config;
+    //       // 可以提示用户是否加载进度
+    //       if (confirm('检测到保存的进度，是否加载？')) {
+    //         this.questions.forEach(q => {
+    //           const savedQ = progress.questions.find(sq => sq.id === q.id);
+    //           if (savedQ) {
+    //             q.userAnswer = savedQ.userAnswer;
+    //             q.isSubmitted = savedQ.isSubmitted;
+    //           }
+    //         });
+    //       }
+    //     } catch (e) {
+    //       console.error('加载进度失败', e);
+    //     }
+    //   }
+    // },
 
     // 提交所有答案
-    submitAllAnswers() {
+    async submitAllAnswers() {
       const unanswered = this.questions.filter(q => 
         q.userAnswer === null || q.userAnswer === undefined || q.userAnswer === ''
       );
@@ -322,8 +326,6 @@ export default {
 
       // const res = await addtest(this.questions);
       if (res.status === 200 || res.status === 201) {
-      console.log("上传成功:", res.data.message);
-      console.log("测试ID:", res.data.testId);
       this.showSuccessMessage('所有答案已提交');
       // 这里可以执行成功后的操作，如跳转页面或显示成功消息
   }else{this.showSuccessMessage('上传失败，请稍后重试');}
@@ -453,7 +455,7 @@ export default {
                 showAnswer: false,
                 isSubmitted: false,
                 options: type === 'choice' ? ["选项A", "选项B", "选项C", "选项D"] : [],
-                isCorrect: false
+                isCorrect: userAnswer===showAnswer
               }
               console.log(newquestion)
             this.questions.push(newquestion)
@@ -548,7 +550,7 @@ export default {
   },
   mounted() {
     // 组件加载时尝试恢复进度
-    this.loadProgress();
+    // this.loadProgress();
   }
 };
 </script>
