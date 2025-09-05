@@ -16,8 +16,8 @@
         </select> -->
         
         <select v-model="filters.sortBy">
-          <!-- <option value="newest">最新优先</option> -->
-          <!-- <option value="oldest">最旧优先</option> -->
+          <option value="newest">最新优先</option>
+          <option value="oldest">最旧优先</option>
           <option value="highest">分数最高</option>
           <option value="lowest">分数最低</option>
         </select>
@@ -40,11 +40,11 @@
         <h3>{{ stats.averageScore }}%</h3>
         <p>平均正确率</p>
       </div>
-      <!-- <div class="stat-card">
+      <div class="stat-card">
         <i class="fas fa-clock"></i>
-        <h3>{{ stats.totalTime }}</h3>
+        <h3>{{ stats.totalTime }}分钟</h3>
         <p>总学习时间</p>
-      </div> -->
+      </div>
       <!-- <div class="stat-card">
         <i class="fas fa-chart-line"></i>
         <h3>{{ stats.improvement }}%</h3>
@@ -60,14 +60,14 @@
       >
         <div class="card-header" :style="headerStyle(result.subject)">
           <h3>{{ result.testName }}</h3>
-          <!-- <p>{{ result.date }} · {{ subjectText(result.subject) }}</p> -->
+          <p>{{ result.date }} </p>
         </div>
         <div class="card-body">
-          <!-- <div class="score">{{ result.score }}分</div> -->
+          <div class="score">{{ result.score }}分</div>
           <ul class="details">
             <li>答题数: <span>{{ result.totalQuestions }}</span></li>
             <li>正确数: <span>{{ result.correctAnswers }}</span></li>
-            <!-- <li>用时: <span>{{ result.timeSpent }}</span></li> -->
+            <li>用时: <span>{{ result.timeSpent }}分钟</span></li>
           </ul>
         </div>
         <div class="card-footer">
@@ -85,11 +85,11 @@
         </div>
         <div class="modal-body">
           <div style="margin-bottom: 20px;">
-            <!-- <p><strong>日期:</strong> {{ selectedTest.date }}</p> -->
-            <!-- <p><strong>得分:</strong> {{ selectedTest.score }}分</p> -->
+            <p><strong>日期:</strong> {{ selectedTest.date }}</p>
+            <p><strong>得分:</strong> {{ selectedTest.score }}分</p>
             <p><strong>答题数:</strong> {{ selectedTest.totalQuestions }}</p>
             <p><strong>正确数:</strong> {{ selectedTest.correctAnswers }}</p>
-            <!-- <p><strong>用时:</strong> {{ selectedTest.timeSpent }}</p> -->
+            <p><strong>用时:</strong> {{ selectedTest.timeSpent }}分钟</p>
           </div>
           <h3>答题详情:</h3>
           <div 
@@ -97,13 +97,14 @@
             v-for="(detail, index) in selectedTest.details" 
             :key="index"
           >
-            <p><strong>问题 {{ index + 1 }}:</strong> {{ detail.question }}</p>
+            <p><strong>问题 {{ detail.id }}:</strong> {{ detail.text }}</p>
+            <p><strong>题型:</strong> {{ detail.type }}</p>
             <p :class="detail.isCorrect ? 'correct' : 'incorrect'">
               <strong>你的答案:</strong> {{ detail.userAnswer }} 
               {{ detail.isCorrect ? '✓' : '✗' }}
             </p>
-            <p v-if="!detail.isCorrect">
-              <strong>正确答案:</strong> {{ detail.correctAnswer }}
+            <p>
+              <strong>正确答案:</strong> {{ detail.showAnswer }}
             </p>
           </div>
         </div>
@@ -113,10 +114,10 @@
 </template>
 
 <script>
-import { gettest } from '../api/test';
-//获取历史数据
-const histest = await gettest();
-console.log(histest);
+import { onMounted } from "vue"
+import { gettest } from '@/api/test';
+import { getquestion } from '@/api/test';
+import axios from 'axios';
 //输出获取参数格式
 export default {
   name: 'HistoryResults',
@@ -283,6 +284,7 @@ export default {
       ]
     }
   },
+  
   computed: {
     
 
@@ -329,11 +331,12 @@ export default {
       return {
         totalTests,
         averageScore,
-        totalTime: '42h',
-        improvement: '+12%'
+        totalTime: this.testResults.reduce((sum, test) => sum + test.timeSpent, 0),
+        improvement: ''
       }
     }
   },
+  
   methods: {
     headerStyle(subject) {
       let subjectColor = '#6a11cb';
@@ -355,6 +358,7 @@ export default {
       
       return `background: linear-gradient(135deg, ${subjectColor} 0%, #2575fc 100%);`;
     },
+
     subjectText(subject) {
       switch(subject) {
         case 'math': return '数学';
@@ -370,7 +374,52 @@ export default {
     },
     closeModal() {
       this.showModal = false;
+    },
+    async fetchTestData() {
+      try {
+        const res = await gettest();
+        this.testResults = [];
+        for(let i=0;i<res.data.length;i++){
+          let T=0;
+          let res2 = await getquestion({"testId": String(res.data[i].testId)});
+          for(let j=0;j<res2.data.length;j++){
+            if(res2.data[j].type=="choice"){
+              res2.data[j].type="单选题";
+            }
+            else if(res2.data[j].type=="judgment"){
+              res2.data[j].type="判断题";
+            }
+            else if(res2.data[j].type=="essay"){
+              res2.data[j].type="填空题";
+            }
+            if(res2.data[j].isCorrect!=0){
+              T++;
+            }
+          }
+          let newData={
+          id: i,
+          testName: res.data[i].title,
+          subject: "",
+          date: res.data[i].testTime.replace(/T/g,' '),
+          score: res.data[i].score,
+          totalQuestions: res2.data.length,
+          correctAnswers: T,
+          timeSpent: res.data[i].duration,
+          details: res2.data
+        }
+        this.testResults.push(newData);
+        }
+        // 假设API返回的数据在res.data中，根据实际情况调整
+        // this.testResults = res.data || [];
+      } catch (error) {
+        console.error("获取测试数据失败:", error);
+        // this.testResults = []; // 出错时设置为空数组
+      }
     }
+  },
+  
+  mounted() {
+    this.fetchTestData();
   }
 }
 </script>

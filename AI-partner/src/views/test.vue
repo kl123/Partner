@@ -116,11 +116,11 @@
         <!-- 判断题选项 -->
         <div v-if="question.type === 'judgment'" class="true-false-grid">
           <button class="tf-btn true-btn" :class="{ selected: question.userAnswer === true }" 
-                  @click="question.userAnswer = true">
+                  @click="updatauseranswer(question,'true')">
             ✅ 正确
           </button>
           <button class="tf-btn false-btn" :class="{ selected: question.userAnswer === false }" 
-                  @click="question.userAnswer = false">
+                  @click="updatauseranswer(question,'false')">
             ❌ 错误
           </button>
         </div>
@@ -136,17 +136,24 @@
           <button @click="submitAnswer(question)" class="submit-btn secondary-btn">
             📤 提交答案
           </button>
-          
+          <p></p>
+          <button @click="add(question)" class="submit-btn secondary-btn">
+            📤 上传至错题集
+          </button>
           <div v-if="question.showAnswer" class="answer-section">
             <h4 class="answer-title">📖 参考答案：</h4>
             <div class="answer-content" v-html="question.answer"></div>
+            <div v-if="question.isSubmitted" class="answer-feedback" 
+                 :class="{ correct: question.userAnswer==question.answer, incorrect: question.userAnswer!=question.answer }">
+              {{ question.isCorrect ? '✅ 您的答案正确！' : '❌ 您的答案不正确。' }}
+            </div>
           </div>
         </div>
         </div>
         <div class="footer-actions">
-          <button @click="saveProgress" class="save-btn secondary-btn">
+          <!-- <button @click="saveProgress" class="save-btn secondary-btn">
             💾 保存进度
-          </button>
+          </button> -->
         <button @click="submitAllAnswers" class="submit-all-btn primary-btn">
           📨 提交所有答案
         </button>
@@ -176,7 +183,7 @@
 </template>
 
 <script>
-import { addtest } from '../api/test';
+import { addtest } from '@/api/test';
 import axios from 'axios';
 
 export default {
@@ -254,43 +261,43 @@ export default {
       this.showSuccessMessage('题目已重置，可以重新生成新题目');
     },
 
-    saveProgress() {
-      const progress = {
-        config: { ...this.configData },
-        questions: this.questions.map(q => ({
-          id: q.id,
-          userAnswer: q.userAnswer,
-          isSubmitted: q.isSubmitted
-        })),
-        timestamp: new Date().toISOString()
-      };
+    // saveProgress() {
+    //   const progress = {
+    //     config: { ...this.configData },
+    //     questions: this.questions.map(q => ({
+    //       id: q.id,
+    //       userAnswer: q.userAnswer,
+    //       isSubmitted: q.isSubmitted
+    //     })),
+    //     timestamp: new Date().toISOString()
+    //   };
       
-      localStorage.setItem('questionProgress', JSON.stringify(progress));
-      this.showSuccessMessage('进度已保存');
-    },
+    //   localStorage.setItem('questionProgress', JSON.stringify(progress));
+    //   this.showSuccessMessage('进度已保存');
+    // },
     
-    // 加载保存的进度（可选功能）
-    loadProgress() {
-      const saved = localStorage.getItem('questionProgress');
-      if (saved) {
-        try {
-          const progress = JSON.parse(saved);
-          this.configData = progress.config;
-          // 可以提示用户是否加载进度
-          if (confirm('检测到保存的进度，是否加载？')) {
-            this.questions.forEach(q => {
-              const savedQ = progress.questions.find(sq => sq.id === q.id);
-              if (savedQ) {
-                q.userAnswer = savedQ.userAnswer;
-                q.isSubmitted = savedQ.isSubmitted;
-              }
-            });
-          }
-        } catch (e) {
-          console.error('加载进度失败', e);
-        }
-      }
-    },
+    // // 加载保存的进度（可选功能）
+    // loadProgress() {
+    //   const saved = localStorage.getItem('questionProgress');
+    //   if (saved) {
+    //     try {
+    //       const progress = JSON.parse(saved);
+    //       this.configData = progress.config;
+    //       // 可以提示用户是否加载进度
+    //       if (confirm('检测到保存的进度，是否加载？')) {
+    //         this.questions.forEach(q => {
+    //           const savedQ = progress.questions.find(sq => sq.id === q.id);
+    //           if (savedQ) {
+    //             q.userAnswer = savedQ.userAnswer;
+    //             q.isSubmitted = savedQ.isSubmitted;
+    //           }
+    //         });
+    //       }
+    //     } catch (e) {
+    //       console.error('加载进度失败', e);
+    //     }
+    //   }
+    // },
 
     // 提交所有答案
     async submitAllAnswers() {
@@ -303,27 +310,28 @@ export default {
           return;
         }
       }
-      
+      let testdata = {
+    "tests": {
+        "title": this.configData.display_name,
+        "score": 0,
+        "duration": 62,
+    },
+    "titles": []
+  }
       this.questions.forEach(question => {
-        if (!question.isSubmitted) {
-          this.submitAnswer(question);
-        }
-      });
-      if(this.questions.userAnswer===1){
-        this.questions.userAnswer="A"
-      }else if(this.questions.userAnswer===2){
-        this.questions.userAnswer="B"
-      }else if(this.questions.userAnswer===3){
-        this.questions.userAnswer="C"
-      }else if(this.questions.userAnswer===4){
-        this.questions.userAnswer="D"
-      }
-      console.log(this.questions)
-
-      const res = await addtest(this.questions);
+        testdata.titles.push({
+          "userAnswer": question.userAnswer,
+          "showAnswer": question.showAnswer,
+          "isSubmitted": question.isSubmitted,
+          "isCorrect": question.isCorrect,
+          "text": question.text,
+          "analysis": '',
+          "type": question.type,
+        })
+      })
+      testdata.tests.score=this.questions.filter(q => q.isCorrect).length;
+      const res = await addtest(testdata);
       if (res.status === 200 || res.status === 201) {
-      console.log("上传成功:", res.data.message);
-      console.log("测试ID:", res.data.testId);
       this.showSuccessMessage('所有答案已提交');
       // 这里可以执行成功后的操作，如跳转页面或显示成功消息
   }else{this.showSuccessMessage('上传失败，请稍后重试');}
@@ -432,13 +440,14 @@ export default {
             if (questionText.includes('判断题')) type = 'judgment';
             else if (questionText.includes('选择题')) type = 'choice';
             answerText=answerText
+              .replace(/。/g,'')
               .replace(/答案/g,'')
               .replace(/；/g,'')
               .replace(/：/g,'')
               .replace(/\n/g, '<br>')
-              .replace(/\\\(/g, '  ')
-              .replace(/$/g, '  ')
-              .replace(/\\\)/g, '  ');
+              .replace(/\\\(/g, '')
+              .replace(/$/g, '')
+              .replace(/\\\)/g, '');
             questionText=questionText
               .replace(/\n/g, '<br>')
               .replace(/\\\(/g, '  ')
@@ -525,16 +534,21 @@ export default {
       question.showAnswer = true;
       
       // 简单的答案验证逻辑
-      if (question.type === '选择题') {
-        question.isCorrect = question.userAnswer === 0; // 假设第一个选项总是正确答案
-      } else if (question.type === '判断题') {
-        question.isCorrect = question.userAnswer === true; // 假设总是正确
+      if (question.type === 'choice') {
+        question.isCorrect = question.userAnswer == question.answer.replace(/A/g,'0').replace(/B/g,'1').replace(/C/g,'2').replace(/D/g,'3');
+      } else if (question.type === 'judgment') {
+        question.isCorrect = question.userAnswer == question.answer.replace(/正确/g,'true').replace(/错误/g,'false');
       }
-      // 解答题不自动判断正误
     },
 
     selectOption(question, optionIndex) {
       question.userAnswer = optionIndex;
+    },
+    updatauseranswer(question,value){
+      question.userAnswer=value;
+    },
+    add(question){
+      console.log(question)
     },
 
     getTypeClass(type) {
@@ -544,11 +558,12 @@ export default {
         '判断题': 'type-judge'
       };
       return typeClasses[type] || '';
-    }
+    },
+
   },
   mounted() {
     // 组件加载时尝试恢复进度
-    this.loadProgress();
+    // this.loadProgress();
   }
 };
 </script>
