@@ -17,7 +17,8 @@ const routes = [
 },
   {path: '/test', component: () => import('@/views/test.vue'), name: 'test' },
   {path: '/historical', component: () => import('@/views/historical.vue'), name: 'historical' },
-  // {path: '/Play', component: () => import('@/components/PlanVideo.vue'), name: 'Play' },
+  {path: '/error', component: () => import('@/views/error.vue'), name: 'error' },
+  {path: '/404', component: () => import('@/404.vue'), name: '404' },
   { path: '/', redirect: '/home' } // 默认跳转首页
 ]
 

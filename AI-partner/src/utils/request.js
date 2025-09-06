@@ -55,6 +55,7 @@ request.interceptors.response.use(
           break
         case 404:
           message.error('请求的资源不存在')
+          router.push('/404')
           break
         default:
           message.error('请求失败：' + (response.data?.message || response.statusText))

@@ -42,7 +42,7 @@ const tabs = [
 const activeKey = ref('home') // 默认首页激活
 
 // 计算属性：判断当前是否为登录页
-const isLoginRoute = computed(() => route.path === '/login')
+const isLoginRoute = computed(() => route.path === '/login'||route.path === '/404')
 
 // 点击切换 tab
 const onTabClick = (key,path) => {

@@ -1,8 +1,9 @@
 <template>
   <div class="learning-progress-page">
     <!-- 页面标题 -->
-    <a-typography-title :level="2" style="color: #1890ff">
+    <a-typography-title :level="2" style="color: #1890ff ;display: flex; flex-direction: row;align-items: center;">
       📚 学习进度
+      <div id="lottie_demo" class="lottie-animation" style="height: 10vh;width: 30%;"></div>
     </a-typography-title>
 
     <!-- 数据总览面板 -->
@@ -70,20 +71,15 @@
 </template>
 
 <script setup>
-// ✅ 只保留数据，不再手动解构 ant-design-vue 组件
-// 所有组件使用 <a-xxx> 标签，由全局注册支持（main.js 中 use 了 ant-design-vue）
-import { ref,onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { getPlan } from "@/api/Study"
 import { useRouter } from 'vue-router'
+import lottieJson from '../assets/animate/vr.json'
+import lottie from 'lottie-web'
 
 const router = useRouter()
 
-const stats = [
-  { title: '总路径数', value: '3', tag: '进行中', color: 'blue' },
-  { title: '已完成', value: '1', tag: '本周', color: 'green' },
-  { title: '学习时长', value: '42h', tag: '累计', color: 'orange' },
-];
-
+// 初始数据，会被接口覆盖
 const learningPaths = ref([
   {
     id: 1,
@@ -108,26 +104,58 @@ const learningPaths = ref([
   },
 ]);
 
-const getlearningPaths =async()=>{
-  const res = await getPlan()
-  learningPaths.value = res.data
+// 使用 computed 动态生成 stats
+const stats = computed(() => {
+  const total = learningPaths.value.length;
+  const completed = learningPaths.value.filter(path => path.completed === 1).length;
+  const inProgress = total - completed; // 进行中 = 总数 - 已完成
+
+  return [
+    { title: '总路径数', value: total, tag: '进行中', color: 'blue' },
+    { title: '已完成', value: completed, tag: '本周', color: 'green' },
+    { title: '学习时长', value: '42h', tag: '累计', color: 'orange' },
+  ];
+});
+
+const getlearningPaths = async () => {
+  const res = await getPlan();
+  learningPaths.value = res.data;
   console.log(res);
 }
 
-const intonode = (id,title) =>{
+const intonode = (id, title) => {
   router.push({
-    name:"nodes",
-    query:{
-      pathId:id,
-      subject:title
+    name: "nodes",
+    query: {
+      pathId: id,
+      subject: title
     }
-  })
+  });
 }
 
-onMounted(()=>{
-  getlearningPaths()
-})
+ // 加载动画
+ let animation = null
+ function initLottie() {
+    const container = document.getElementById('lottie_demo')
+    if (!container) return
 
+    if (animation) {
+      animation.destroy()
+    }
+
+    animation = lottie.loadAnimation({
+      container,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: lottieJson
+    })
+ }
+
+onMounted(() => {
+  getlearningPaths();
+  initLottie()
+})
 </script>
 
 <style scoped>

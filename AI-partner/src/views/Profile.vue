@@ -75,7 +75,7 @@ const stats = reactive({
 
 // 快捷入口
 const actions = ref([
-  { key: 'history', title: '错题记录', icon: '📚' },
+  { key: 'error', title: '错题记录', icon: '📚' },
   { key: 'words', title: '单词本', icon: '📖' },
   { key: 'historical', title: '测试记录', icon: '⚙️' },
   { key: 'feedback', title: '学习提醒', icon: '💬' }
