@@ -5,7 +5,7 @@ export const gettest = () => {
 }
 
 export const addtest = (test) => {
-  return request.post('/title/addTestAndTitlesList/addWrongQuestion', test)
+  return request.post('/title/addTestAndTitlesList', test)
 }
 
 export const getquestion = (testid) => {

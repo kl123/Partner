@@ -106,6 +106,7 @@
             <p>
               <strong>正确答案:</strong> {{ detail.showAnswer }}
             </p>
+            <button class="btn" @click="add(detail)" v-if="!detail.isCorrect">添加到错题集</button>
           </div>
         </div>
       </div>
@@ -117,6 +118,8 @@
 import { onMounted } from "vue"
 import { gettest } from '@/api/test';
 import { getquestion } from '@/api/test';
+import { adderror } from '@/api_py/add';
+import { getquestionanswer } from '@/api_py/add';
 import axios from 'axios';
 //输出获取参数格式
 export default {
@@ -415,8 +418,33 @@ export default {
         console.error("获取测试数据失败:", error);
         // this.testResults = []; // 出错时设置为空数组
       }
-    }
+    },
+add(result){
+    console.log(result)
+      const username =localStorage.getItem("username")
+      const questionanswer=await getquestionanswer(result.text)
+      const dedata={
+        input:{
+        "question":result.text,
+        "correct_answer":result.showAnswer,
+        "error_answer":result.userAnswer.data,
+        "reason":questionanswer,
+        "username":username,
+      }
+      }
+      adderror(dedata)
+        .then(response => {
+          console.log('数据添加成功:', response.data);
+          // 可以添加成功提示或刷新数据
+        })
+        .catch(error => {
+          console.error('数据添加失败:', error);
+          // 可以添加错误提示
+        });
+    },
   },
+  
+
   
   mounted() {
     this.fetchTestData();
