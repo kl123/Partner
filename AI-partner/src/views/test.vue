@@ -116,18 +116,18 @@
         <!-- 判断题选项 -->
         <div v-if="question.type === 'judgment'" class="true-false-grid">
           <button class="tf-btn true-btn" :class="{ selected: question.userAnswer === true }" 
-                  @click="updatauseranswer(question,'true')">
+                  @click="updatauseranswer(question,'正确')">
             ✅ 正确
           </button>
           <button class="tf-btn false-btn" :class="{ selected: question.userAnswer === false }" 
-                  @click="updatauseranswer(question,'false')">
+                  @click="updatauseranswer(question,'错误')">
             ❌ 错误
           </button>
         </div>
         
         <!-- 解答题输入区域 -->
         <div v-if="question.type === 'essay'" class="answer-area">
-          <textarea v-model="question.userAnswer" placeholder="✏️ 请输入您的解答..." 
+          <textarea  placeholder="✏️ 请输入您的解答..." 
                     class="answer-textarea"></textarea>
         </div>
         
@@ -143,7 +143,7 @@
           <div v-if="question.showAnswer" class="answer-section">
             <h4 class="answer-title">📖 参考答案：</h4>
             <div class="answer-content" v-html="question.answer"></div>
-            <div v-if="question.isSubmitted" class="answer-feedback" 
+            <div v-if="question.isSubmitted&&['choice', 'judgment'].includes(question.type)" class="answer-feedback" 
                  :class="{ correct: question.userAnswer==question.answer, incorrect: question.userAnswer!=question.answer }">
               {{ question.isCorrect ? '✅ 您的答案正确！' : '❌ 您的答案不正确。' }}
             </div>
@@ -184,6 +184,8 @@
 
 <script>
 import { addtest } from '@/api/test';
+import { adderror } from '@/api_py/add';
+import { getquestionanswer } from '@/api_py/add';
 import axios from 'axios';
 
 export default {
@@ -207,6 +209,7 @@ export default {
         TorF: "",
         response: ""
       },
+      score:0,
       questions: [],
       loading: false,
       error: '',
@@ -313,17 +316,17 @@ export default {
       let testdata = {
     "tests": {
         "title": this.configData.display_name,
-        "score": 0,
-        "duration": 62,
+        "score": this.score,
+        "duration": 0,
     },
     "titles": []
   }
       this.questions.forEach(question => {
         testdata.titles.push({
           "userAnswer": question.userAnswer,
-          "showAnswer": question.showAnswer,
-          "isSubmitted": question.isSubmitted,
-          "isCorrect": question.isCorrect,
+          "showAnswer": question.answer,
+          "isSubmitted": question.isSubmitted?1:0,
+          "isCorrect": question.isCorrect?1:0,
           "text": question.text,
           "analysis": '',
           "type": question.type,
@@ -331,11 +334,7 @@ export default {
       })
       testdata.tests.score=this.questions.filter(q => q.isCorrect).length;
       const res = await addtest(testdata);
-      if (res.status === 200 || res.status === 201) {
-      this.showSuccessMessage('所有答案已提交');
-      // 这里可以执行成功后的操作，如跳转页面或显示成功消息
-  }else{this.showSuccessMessage('上传失败，请稍后重试');}
-      //上传答题情况
+      console.log(res)
     },
     
     // 滚动到顶部
@@ -429,7 +428,6 @@ export default {
         //需要修改的地方
         const response = await axios.post('http://localhost:8085/workflow/TestAIrun', requestData);
         if (response.data && response.data.data) {
-          console.log('API返回数据:', response.data);
           const data=response.data.data;
           const halfLength=Math.ceil(data.length/2);
           this.questions=[];
@@ -458,15 +456,13 @@ export default {
                 text: questionText,
                 type: type,
                 answer:answerText,
-                userAnswer: null,
+                userAnswer: false,
                 showAnswer: false,
                 isSubmitted: false,
                 options: type === 'choice' ? ["选项A", "选项B", "选项C", "选项D"] : [],
                 isCorrect: false
               }
-              console.log(newquestion)
             this.questions.push(newquestion)
-            console.log(this.questions)
           }
           
       } else {
@@ -536,8 +532,13 @@ export default {
       // 简单的答案验证逻辑
       if (question.type === 'choice') {
         question.isCorrect = question.userAnswer == question.answer.replace(/A/g,'0').replace(/B/g,'1').replace(/C/g,'2').replace(/D/g,'3');
+        this.score+=question.isCorrect?1:0;
       } else if (question.type === 'judgment') {
         question.isCorrect = question.userAnswer == question.answer.replace(/正确/g,'true').replace(/错误/g,'false');
+        this.score+=question.isCorrect?1:0;
+      } else if (question.type === 'essay') {
+        question.isCorrect = question.userAnswer == question.answer;
+        this.score+=question.isCorrect?1:0;
       }
     },
 
@@ -547,8 +548,18 @@ export default {
     updatauseranswer(question,value){
       question.userAnswer=value;
     },
-    add(question){
-      console.log(question)
+    async add(question){
+      const username =localStorage.getItem("username")
+      const questionanswer=await getquestionanswer({input:question.text})
+      console.log(questionanswer)
+      const dedata={
+        input:{
+        "question":question.text,
+        "correct_answer":question.answer,
+        "error_answer":String(question.userAnswer),
+        "reason":questionanswer.data,
+        "username":username,}
+      }
     },
 
     getTypeClass(type) {
