@@ -419,19 +419,20 @@ export default {
         // this.testResults = []; // 出错时设置为空数组
       }
     },
-add(result){
+    async add(result){
     console.log(result)
       const username =localStorage.getItem("username")
-      const questionanswer=await getquestionanswer(result.text)
+      const questionanswer=await getquestionanswer({input:result.text})
       const dedata={
         input:{
-        "question":result.text,
-        "correct_answer":result.showAnswer,
-        "error_answer":result.userAnswer.data,
-        "reason":questionanswer,
+        "question":String(result.text),
+        "correct_answer":String(result.showAnswer),
+        "error_answer":String(result.userAnswer.data),
+        "reason":questionanswer.data,
         "username":username,
       }
       }
+      console.log(dedata)
       adderror(dedata)
         .then(response => {
           console.log('数据添加成功:', response.data);

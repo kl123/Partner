@@ -548,9 +548,10 @@ export default {
     updatauseranswer(question,value){
       question.userAnswer=value;
     },
-    add(question){
+    async add(question){
       const username =localStorage.getItem("username")
-      const questionanswer=await getquestionanswer(question.text)
+      const questionanswer=await getquestionanswer({input:question.text})
+      console.log(questionanswer)
       const dedata={
         input:{
         "question":question.text,
@@ -558,17 +559,7 @@ export default {
         "error_answer":String(question.userAnswer),
         "reason":questionanswer.data,
         "username":username,}
-        
       }
-      adderror(dedata)
-        .then(response => {
-          console.log('数据添加成功:', response.data);
-          // 可以添加成功提示或刷新数据
-        })
-        .catch(error => {
-          console.error('数据添加失败:', error);
-          // 可以添加错误提示
-        });
     },
 
     getTypeClass(type) {
