@@ -27,12 +27,12 @@
       />
       <a-button type="dashed" danger style="font-size: 8px;" @click="into('customization')">点击进入个性化定制</a-button>
     </div>
-    
+
     <!-- 文字内容 -->
     <div class="wenjuan-text">
       <img
         src="../assets/问卷背景.png"
-        style="height: 100%;width: 100%;"    
+        style="height: 100%;width: 100%;"
       >
     </div>
   </div>
@@ -60,77 +60,223 @@
       <img src="../assets/问答库.png" alt="智能答疑">
       <div class="text">智能答疑</div>
     </div>
-
   </div>
+
   <div class="function">
-    <!-- 每日听力 -->
+    <!-- 就业分析 -->
     <div class="item">
       <img src="../assets/人脸数据分析.png" alt="就业分析">
       <div class="text">就业分析</div>
     </div>
 
-    <!-- 测试题 -->
+    <!-- 测试生成 -->
     <div class="item" @click="into('test')">
       <img src="../assets/维修档案.png" alt="测试生成">
       <div class="text">测试生成</div>
     </div>
 
-    <!-- 智能答疑 -->
+    <!-- 风险预知 -->
     <div class="item">
       <img src="../assets/风险预知.png" alt="风险预知">
       <div class="text">风险预知</div>
     </div>
+  </div>
 
+  <div class="course" v-if="showTable">
+    <CourseTable />
   </div>
-  <div class="course">
-    <CourseTable/>
+
+  <!-- 课表图片识别 -->
+  <div class="course" v-if="!showTable">
+    <a-upload-dragger
+      v-bind="uploadProps"
+      @change="handleChange"
+      @drop="handleDrop"
+    >
+      <p class="ant-upload-drag-icon">
+        <inbox-outlined />
+      </p>
+      <p class="ant-upload-text">请上传课表图片文件进行识别!</p>
+      <p class="ant-upload-hint">
+        Support for a single or bulk upload. Strictly prohibited from uploading company data or other
+        banned files.
+      </p>
+    </a-upload-dragger>
   </div>
-  
+  <!-- 课程确认弹窗 -->
+  <Modal
+    title="📖课程确认"
+    :open="isModalOpen"
+    @ok="handleOk"
+    @cancel="handleCancel"
+    :centered="true"
+    width="800px"
+  >
+    <div style="max-height: 70vh; overflow-y: auto; padding: 0 20px;">
+      <div v-for="(item,index) in classData" :key="index" style="border-bottom: 1px skyblue solid;">
+        <div style="display: flex;flex-direction: row;width: 100%;">
+          <a-input :value="item.name" @update:value="val => item.name = val" placeholder="课程名" style="display: flex;flex: 1;"/>
+          <a-input :value="item.teacher" @update:value="val => item.teacher = val" placeholder="授课老师" style="display: flex;flex: 1;"/>
+        </div>
+        <div style="display: flex;flex-direction: row;width: 100%;">
+          <a-input :value="item.week" @update:value="val => item.week = val" placeholder="礼拜" style="display: flex;flex: 1;"/>
+          <a-input :value="item.location" @update:value="val => item.location = val" placeholder="" style="display: flex;flex: 1;"/>
+          <a-input :value="item.color" @update:value="val => item.color = val" placeholder="" style="display: flex;flex: 1;"/>
+        </div>
+        <div style="margin: 10px 0;">
+          <span>选择节次：</span>
+          <a-checkbox-group
+            :value="item.num"
+            :options="timeOptions"
+            style="display: flex; flex-wrap: wrap; gap: 8px;"
+            @update:value="(val) => item.num = val"
+          />
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <a-button type="dashed" @click="addNewCourse">
+          <PlusCircleOutlined /> 新增一行课程
+        </a-button>
+      </div>
+    </div>
+  </Modal>
 </template>
+
 <script setup>
-import { Carousel } from 'ant-design-vue';
-import lottie from 'lottie-web'; // 引入 lottie-web
-import lottieJson from '../assets/animate/cat.json'; // 你的动画 JSON
-import { onMounted, onUnmounted } from 'vue';
+import { Modal } from 'ant-design-vue'
+import { Carousel } from 'ant-design-vue'
+import { onMounted, onUnmounted, ref, computed, nextTick ,reactive} from 'vue'
 import { useRouter } from 'vue-router'
 import CourseTable from '@/components/CourseTable.vue'
-
-let animation = null;
+import { InboxOutlined ,PlusCircleOutlined} from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import axios from 'axios'
+import { addclass,getclass } from "@/api/class.js"
+let animation = null
+const showTable = ref(false)
 const router = useRouter()
+const isModalOpen = ref(false)
+const classData = reactive([{
+      name: '计算机组成原理',
+      week: '五',
+      num: [5, 6],
+      teacher: '赵六',
+      location: 'C304',
+      color: '#9370DB', // 同上
+    }])
+// 生成 1~12 的选项
+const timeOptions = Array.from({ length: 12 }, (_, i) => ({
+  label: `${i + 1}`,
+  value: i + 1,
+}))
 
-// 初始化 Lottie 动画
-function initLottie() {
-  const container = document.getElementById('lottie_demo');
-  if (!container) return;
+// 路由跳转
+const into = (name) => {
+  router.push({ name })
+}
 
-  // 销毁可能已存在的动画
-  if (animation) {
-    animation.destroy();
+// ==================== 自定义上传逻辑 ====================
+const customUploadRequest = async ({ file, onSuccess, onError, onProgress }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    message.error('未检测到登录凭证，请先登录')
+    onError(new Error('No token provided'))
+    return
   }
 
-  animation = lottie.loadAnimation({
-    container, // 动画插入的 DOM 容器
-    renderer: 'svg', // 渲染为 SVG（推荐）
-    loop: true,
-    autoplay: true,
-    animationData: lottieJson, // 动画数据
-  });
-}
-//路由跳转
-const into = (name) => {
-  router.push({name:name})
+  try {
+    const response = await axios.post(
+      import.meta.env.VITE_APP_BASE_API + '/IndividualPlaning/create',
+      formData,
+      {
+        headers: {
+          Authorization: token,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total > 0) {
+            const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total)
+            onProgress({ percent })
+          }
+        },
+      }
+    )
+    console.log(response.data)
+    if (response.data.code == 1) {
+      message.success(`${file.name} 课表图片识别成功`)
+      Object.assign(classData, response.data.data.output);
+      showModal()
+    }
+  } catch (error) {
+    console.error('上传失败:', error)
+    onError(error)
+
+    if (error.response?.status === 401) {
+      message.error('登录已过期，请重新登录')
+    } else if (error.response?.status === 403) {
+      message.error('无权限上传文件')
+    } else {
+      message.error(`${file.name} 上传失败：${error.message || '网络错误'}`)
+    }
+  }
 }
 
-onMounted(() => {
-  // initLottie();
-});
+const uploadProps = {
+  name: 'file',
+  multiple: true,
+  customRequest: customUploadRequest,
+}
+
+const showModal = () => {
+  isModalOpen.value = true
+}
+
+const handleOk = async() => {
+  console.log('✅ 最终课程数据 classData：', classData)
+  isModalOpen.value = false
+  //这里进行数据库插入
+  const res = await addclass(classData)
+  console.log(res);
+  if (res.code == 1) {
+    showTable.value = true
+  }
+}
+
+const handleCancel = () => {
+  isModalOpen.value = false
+}
+
+// 👇 新增一行课程（直接 push 到 reactive 数组）
+const addNewCourse = () => {
+  classData.push({
+    name: '',
+    teacher: '',
+    week: '',
+    location: '',
+    color: '#1890ff', // 默认蓝色
+    num: [], // 默认没选节次
+  })
+}
+
+onMounted(async() => {
+  const response = await getclass()
+  console.log(response);
+  let num = response.data.course.course.length
+  if (num>0) {
+    showTable.value = true
+  }
+})
 
 onUnmounted(() => {
   if (animation) {
-    animation.destroy(); // 组件销毁时清理动画
+    animation.destroy()
   }
-});
+})
 </script>
+
 <style scoped>
 /* 引入美观的中文字体 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
@@ -145,7 +291,6 @@ onUnmounted(() => {
   font-size: 18px;
   color: #4a4a4a;
   letter-spacing: 0.5px;
-  /* border-bottom: #9c9c9c 1px solid; */
 }
 
 .section-title .icon {
@@ -157,7 +302,6 @@ onUnmounted(() => {
   padding-left: 8px;
 }
 
-/* 添加左侧竖条装饰 */
 .section-title .text::before {
   content: '';
   position: absolute;
@@ -169,7 +313,6 @@ onUnmounted(() => {
   border-radius: 2px;
 }
 
-/* 响应式适配 */
 @media (max-width: 768px) {
   .section-title {
     font-size: 16px;
@@ -179,7 +322,6 @@ onUnmounted(() => {
   }
 }
 
-/* 保持原有样式不变 */
 .notice {
   height: 20%;
   width: 100%;
