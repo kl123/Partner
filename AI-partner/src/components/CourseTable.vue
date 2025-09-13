@@ -27,9 +27,9 @@
   </template>
   
   <script setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed,onMounted } from 'vue';
   import { Card, Table } from 'ant-design-vue';
-  
+  import { getclass } from'@/api/class.js'
   // 原始课程数据，已添加 color 属性
   const rawCourses = ref([
     {
@@ -84,7 +84,7 @@
   };
   
   // 所有节次：1 到 8
-  const periods = ref([1, 2, 3, 4, 5, 6, 7, 8]);
+  const periods = ref([1, 2, 3, 4, 5, 6, 7, 8,9,10]);
   
   // 生成表格数据，并处理合并单元格的逻辑
   const tableData = computed(() => {
@@ -106,7 +106,7 @@
   
     // 构建表格数据
     const data = [];
-    for (let period = 1; period <= 8; period++) {
+    for (let period = 1; period <= 12; period++) {
       const row = {
         time: `第${period}节`,
         monday: null,
@@ -181,6 +181,11 @@
     { title: '周四', dataIndex: 'thursday', key: 'thursday' },
     { title: '周五', dataIndex: 'friday', key: 'friday' },
   ]);
+  onMounted(async()=>{
+    const response = await getclass()
+    rawCourses.value = response.data.course.course
+    console.log(response);
+  })
   </script>
   
   <style scoped>
