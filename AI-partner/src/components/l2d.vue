@@ -7,7 +7,7 @@
       <!-- 左侧控制面板 -->
       <div class="floating-controls left-controls" v-if="model">
         <div class="control-group">
-          <div class="control-label">模型控制</div>
+          <!-- <div class="control-label">模型控制</div> -->
           <button class="control-btn" @click="switchModel" title="切换模型">
             <span class="btn-icon">↻</span>
           </button>
@@ -23,7 +23,7 @@
       <!-- 右侧控制面板 -->
       <div class="floating-controls right-controls" v-if="model">
         <div class="control-group">
-          <div class="control-label">缩放控制</div>
+          <!-- <div class="control-label">缩放控制</div> -->
           <button class="control-btn" @click="adjustScale(5)" title="放大">
             <span class="btn-icon">+</span>
           </button>
