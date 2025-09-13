@@ -7,3 +7,7 @@ export const adderror = (error) => {
 export const getquestionanswer = (test) => {
   return request.post('workflow/analysis', test)
 }
+
+export const getvideo = (txt) => {
+  return request.post('modelCall/TextToAudio', txt)
+}

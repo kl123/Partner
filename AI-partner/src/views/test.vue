@@ -449,11 +449,14 @@ export default {
             questionText=questionText
               .replace(/\n/g, '<br>')
               .replace(/\\\(/g, '  ')
-              .replace(/$/g, '  ')
+              .replace(/$/g, ' ')
               .replace(/\\\)/g, '  ');
             let newquestion={
                 id: i + 1,
-                text: questionText,
+                text: questionText.replace(/\n/g, '<br>')
+              .replace(/\\\(/g, '  ')
+              .replace(/$/g, ' ')
+              .replace(/\\\)/g, '  '),
                 type: type,
                 answer:answerText,
                 userAnswer: false,
@@ -560,6 +563,8 @@ export default {
         "reason":questionanswer.data,
         "username":username,}
       }
+      const res=await adderror(dedata)
+      console.log(res)
     },
 
     getTypeClass(type) {
