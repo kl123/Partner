@@ -24,7 +24,7 @@
               :class="`gradient-${index + 1}`"
             >
               <template #title>
-                <span style="color: white; font-weight: bold">{{ item.displayName }}</span>
+                <span style="color: white; font-weight: bold">{{ item.display_name}}</span>
               </template>
   
               <!-- 内容区域 -->
@@ -124,7 +124,7 @@
   // 学习路径数据（增强版）
   const timelineItems = ref([
     {
-      displayName: '路径1：离散数学',
+      display_name: '路径1：离散数学',
       difficulty: 2,
       difficultyText: '中等',
       proficiency:0.5,
@@ -132,7 +132,7 @@
       description: '学习集合、逻辑、图论等基础数学知识，为算法打下坚实基础。',
     },
     {
-      displayName: '路径2：数据结构与算法',
+      display_name: '路径2：数据结构与算法',
       difficulty: 3,
       difficultyText: '困难',
       proficiency:0.3,
@@ -140,7 +140,7 @@
       description: '掌握数组、链表、栈、队列、树、图等结构及常见算法实现。',
     },
     {
-      displayName: '路径3：前端开发入门',
+      display_name: '路径3：前端开发入门',
       difficulty: 1,
       difficultyText: '简单',
       dayNum: 14,
@@ -148,7 +148,7 @@
       description: '学习 HTML、CSS、JavaScript 和 Vue 基础，完成静态页面开发。',
     },
     {
-      displayName: '路径4：算法进阶实战',
+      display_name: '路径4：算法进阶实战',
       difficulty: 3,
       difficultyText: '困难',
       dayNum: 30,
@@ -183,13 +183,13 @@
 
   // 模拟点击“进入学习”
   const handleStart = (item) => {
-    console.log('🚀 开始学习:', item.title);
+    console.log('🚀 开始学习:', item.display_name);
     showStatus.value = false
     // 这里可以跳转页面，比如：
     router.push({
       name:"video",
       query:{
-      title:item.displayName
+      title:item.display_name
     }
   })
       //进行本地存储
