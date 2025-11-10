@@ -17,6 +17,32 @@
           <button class="control-btn" @click="resetScale" title="重置大小">
             <span class="btn-icon">↺</span>
           </button>
+          <input
+              type="file"
+              ref="fileInput"
+              accept=".wav,.mp3,.ogg"
+              @change="handleFileSelect"
+              style="display: none"
+            />
+            <button class="control-btn" @click="selectAudioFile" title="选择音频文件">
+              <span class="btn-icon">📁</span>
+            </button>
+            <button 
+              class="control-btn" 
+              :class="{ 'recording': isRecording }"
+              @click="toggleRecording"
+              :title="isRecording ? '停止录音' : '开始录音'"
+            >
+              <span class="btn-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
+            </button>
+            <button 
+              class="control-btn" 
+              @click="togglePlayback"
+              :disabled="!currentAudioBuffer"
+              :title="isPlaying ? '暂停播放' : '播放音频'"
+            >
+              <span class="btn-icon">{{ isPlaying ? '⏸️' : '▶️' }}</span>
+            </button>
         </div>
       </div>
 
@@ -45,15 +71,265 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount ,watch} from 'vue'
 import { Live2DModel } from 'pixi-live2d-display/cubism4'
 import * as PIXI from 'pixi.js'
 
 const canvas = ref(null)
 const container = ref(null)
+const waveformCanvas = ref(null)
+const fileInput = ref(null)
 let app = null
 let model = ref(null)
 let currentScale = ref(0.2) // 初始缩放20%
+// 添加调试变量
+const lastEnergy = ref(0)
+const debugMode = ref(true)
+// 音频相关状态
+const isRecording = ref(false)
+const isPlaying = ref(false)
+const currentAudioBuffer = ref(null)
+const audioDuration = ref(0)
+const currentTime = ref(0)
+const audioContext = ref(null)
+const audioSource = ref(null)
+const analyser = ref(null)
+const animationFrame = ref(null)
+
+// 嘴型参数
+const mouthOpenness = ref(0)
+const mouthMovement = ref(0)
+
+// 配置参数
+const config = {
+  maxScale: 1.5,
+  minScale: 0.1,
+  baseScale: 0.2,
+  padding: 20,
+  mouthSensitivity: 1.5, // 嘴型敏感度
+  mouthSmoothing: 0.8    // 嘴型平滑度
+}
+// 初始化音频上下文
+const initAudioContext = () => {
+  if (!audioContext.value) {
+    audioContext.value = new (window.AudioContext || window.webkitAudioContext)()
+    analyser.value = audioContext.value.createAnalyser()
+    analyser.value.fftSize = 256
+    analyser.value.smoothingTimeConstant = 0.8
+  }
+}
+
+// 选择音频文件
+const selectAudioFile = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    loadAudioFile(file)
+  }
+}
+
+// 加载音频文件
+const loadAudioFile = (file) => {
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    try {
+      initAudioContext()
+      const audioData = e.target.result
+      const buffer = await audioContext.value.decodeAudioData(audioData)
+      currentAudioBuffer.value = buffer
+      audioDuration.value = buffer.duration
+      setupWaveform()
+    } catch (error) {
+      console.error('加载音频文件失败:', error)
+    }
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+// 设置波形显示
+const setupWaveform = () => {
+  if (!waveformCanvas.value || !currentAudioBuffer.value) return
+
+  const canvas = waveformCanvas.value
+  const ctx = canvas.getContext('2d')
+  const width = canvas.width
+  const height = canvas.height
+
+  // 绘制波形
+  const data = currentAudioBuffer.value.getChannelData(0)
+  ctx.clearRect(0, 0, width, height)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'
+  ctx.fillRect(0, 0, width, height)
+
+  ctx.strokeStyle = '#667eea'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+
+  const sliceWidth = width / data.length
+  let x = 0
+
+  for (let i = 0; i < data.length; i++) {
+    const y = (data[i] * height / 2) + height / 2
+    if (i === 0) {
+      ctx.moveTo(x, y)
+    } else {
+      ctx.lineTo(x, y)
+    }
+    x += sliceWidth
+  }
+
+  ctx.stroke()
+}
+
+// 播放音频
+const playAudio = () => {
+  if (!currentAudioBuffer.value || !audioContext.value) return
+
+  stopAudio()
+
+  audioSource.value = audioContext.value.createBufferSource()
+  audioSource.value.buffer = currentAudioBuffer.value
+
+  // 连接分析器
+  audioSource.value.connect(analyser.value)
+  analyser.value.connect(audioContext.value.destination)
+
+  // 设置播放事件
+  audioSource.value.onended = () => {
+    isPlaying.value = false
+    currentTime.value = 0
+    cancelAnimationFrame(animationFrame.value)
+    mouthOpenness.value = 0
+    updateMouthShape()
+  }
+
+  audioSource.value.start(0)
+  isPlaying.value = true
+  startAudioAnalysis()
+}
+
+// 停止音频
+const stopAudio = () => {
+  if (audioSource.value) {
+    try {
+      audioSource.value.stop()
+      audioSource.value.disconnect()
+    } catch (error) {
+      console.error('停止音频时出错:', error)
+    }
+    audioSource.value = null
+  }
+  isPlaying.value = false
+  currentTime.value = 0
+  cancelAnimationFrame(animationFrame.value)
+}
+
+// 开始音频分析
+const startAudioAnalysis = () => {
+  const dataArray = new Uint8Array(analyser.value.frequencyBinCount)
+
+  const analyze = () => {
+    if (!isPlaying.value) return
+
+    analyser.value.getByteFrequencyData(dataArray)
+    
+    // 计算音频能量（主要在中高频范围）
+    let energy = 0
+    for (let i = 10; i < 50; i++) {
+      energy += dataArray[i]
+    }
+    energy = energy / 40 / 128 // 归一化到 0-1
+
+    // 平滑嘴型变化
+    mouthMovement.value = Math.max(0, Math.min(1, energy * config.mouthSensitivity))
+    mouthOpenness.value = mouthOpenness.value * config.mouthSmoothing + 
+                         mouthMovement.value * (1 - config.mouthSmoothing)
+
+    updateMouthShape()
+
+    // 更新当前时间
+    if (audioSource.value && audioContext.value) {
+      currentTime.value = audioContext.value.currentTime - audioSource.value.startTime
+      if (currentTime.value >= audioDuration.value) {
+        isPlaying.value = false
+        return
+      }
+    }
+
+    animationFrame.value = requestAnimationFrame(analyze)
+  }
+
+  analyze()
+}
+
+// 更新嘴型
+const updateMouthShape = () => {
+  if (!model.value) return
+
+  // 根据嘴型开合度设置参数（不同模型参数名可能不同）
+  const mouthParams = [
+    'ParamMouthOpenY'    // 最常见的嘴型参数
+  ]
+
+  // 尝试设置嘴型参数
+  for (const param of mouthParams) {
+    if (model.value.internalModel.coreModel.getParameterIndex(param) !== -1) {
+      model.value.internalModel.coreModel.setParameterValueById(
+        param,
+        mouthOpenness.value
+      )
+
+      console.log(`设置参数 ${param} 为 ${mouthOpenness.value}`)
+      break
+    }
+  }
+}
+
+// 切换播放状态
+const togglePlayback = () => {
+  if (isPlaying.value) {
+    stopAudio()
+  } else {
+    playAudio()
+  }
+}
+
+// 录音功能（需要用户授权）
+const toggleRecording = async () => {
+  if (isRecording.value) {
+    stopRecording()
+  } else {
+    await startRecording()
+  }
+}
+
+const startRecording = async () => {
+  try {
+    initAudioContext()
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    isRecording.value = true
+    // 这里可以添加录音实现
+    console.log('开始录音')
+  } catch (error) {
+    console.error('无法访问麦克风:', error)
+  }
+}
+
+const stopRecording = () => {
+  isRecording.value = false
+  console.log('停止录音')
+}
+
+// 时间格式化
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
 
 // 模型列表
 const modelList = [
@@ -62,14 +338,6 @@ const modelList = [
   './Miss Bai/Miss Bai.model3.json'
 ]
 let currentModelIndex = ref(0)
-
-// 配置参数
-const config = {
-  maxScale: 1.5,    // 最大放大150%
-  minScale: 0.1,    // 最小缩小10%
-  baseScale: 0.2,   // 基础缩放比例20%
-  padding: 20
-}
 
 // 获取自适应画布尺寸 - 100%背景大小
 const getAdaptiveCanvasSize = () => {
@@ -165,6 +433,44 @@ const handleResize = () => {
 
 let resizeObserver = null
 
+const handleKeyDown = (event) => {
+  // 检查是否按下A键（keyCode 65）
+  if (event.keyCode === 65 || event.key === 'a' || event.key === 'A') {
+    // 防止浏览器默认行为
+    event.preventDefault();
+    
+    // 触发模型切换
+    switchModel();
+    
+    // 可选：添加视觉反馈
+    document.body.classList.add('key-pressed');
+    setTimeout(() => {
+      document.body.classList.remove('key-pressed');
+    }, 200);
+  }
+  else if (event.keyCode === 66 || event.key === 'b' || event.key === 'B') {
+    event.preventDefault();
+    adjustScale(5); // 按B键放大
+  }
+  else if (event.keyCode === 67 || event.key === 'c' || event.key === 'C') {
+    event.preventDefault();
+    adjustScale(-5); // 按C键缩小
+  }
+  else if (event.keyCode === 82 || event.key === 'r' || event.key === 'R') {
+    event.preventDefault();
+    resetScale(); // 按R键重置大小
+  }
+  else if (event.keyCode === 77 || event.key === 't' || event.key === 'T') {
+    model.value.internalModel.coreModel.setParameterValueById('ParamExpression11', 1);
+    model.value.internalModel.coreModel.setParameterValueById('ParamExpression43', 1);
+  }
+  else if (event.keyCode === 78 || event.key === 'n' || event.key === 'N') {
+    console.log('PIXI.live2d:', PIXI.live2d);
+    console.log('Live2DCubismFramework:', typeof Live2DCubismFramework);
+    console.log('CubismFramework:', typeof CubismFramework);
+  }
+};
+
 onMounted(() => {
   window.PIXI = PIXI
 
@@ -183,6 +489,12 @@ onMounted(() => {
     autoDensity: true
   })
 
+    // 初始化波形画布
+  if (waveformCanvas.value) {
+    waveformCanvas.value.width = 300
+    waveformCanvas.value.height = 60
+  }
+  
   // 设置画布样式为100%
   canvas.value.style.width = `${initialSize.width}px`
   canvas.value.style.height = `${initialSize.height}px`
@@ -193,6 +505,8 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
   resizeObserver = new ResizeObserver(handleResize)
   resizeObserver.observe(container.value)
+
+  window.addEventListener('keydown', handleKeyDown);
 })
 
 // 加载初始模型
@@ -220,6 +534,7 @@ onBeforeUnmount(() => {
   if (resizeObserver) resizeObserver.disconnect()
   if (model.value) model.value.destroy()
   if (app) app.destroy(true, { children: true })
+  window.removeEventListener('keydown', handleKeyDown);
 })
 </script>
 
