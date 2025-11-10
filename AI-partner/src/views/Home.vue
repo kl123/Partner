@@ -42,27 +42,27 @@
       <!-- 功能图标区 -->
       <div class="function-grid">
         <div class="function-item">
-          <i class="icon-assistant"></i>
+          <img class="icon-assistant" src="../assets/1.png" alt="小智助手" />
           <span>小智助手</span>
         </div>
         <div class="function-item">
-          <i class="icon-wordbook"></i>
+          <img class="icon-wordbook" src="../assets/2.png" alt="单词宝典" />
           <span>单词宝典</span>
         </div>
         <div class="function-item">
-          <i class="icon-qa"></i>
+          <img class="icon-qa" src="../assets/3.png" alt="智能答疑" />
           <span>智能答疑</span>
         </div>
         <div class="function-item">
-          <i class="icon-analysis"></i>
+          <img class="icon-analysis" src="../assets/4.png" alt="就业分析" />
           <span>就业分析</span>
         </div>
         <div class="function-item">
-          <i class="icon-test"></i>
+          <img class="icon-test" src="../assets/5.png" alt="测试生成" />
           <span>测试生成</span>
         </div>
         <div class="function-item">
-          <i class="icon-warning"></i>
+          <img class="icon-warning" src="../assets/6.png" alt="风险预知" />
           <span>风险预知</span>
         </div>
       </div>
@@ -148,7 +148,7 @@ export default {
 }
 
 .icon-assistant, .icon-wordbook, .icon-qa, .icon-analysis, .icon-test, .icon-warning, .icon-check, .icon-home, .icon-progress, .icon-ai, .icon-mine {
-  width: 24px;
+  width: 50px;
   margin-right: 8px;
 }
 
