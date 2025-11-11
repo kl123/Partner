@@ -19,7 +19,8 @@ const routes = [
   {path: '/historical', component: () => import('@/views/historical.vue'), name: 'historical' },
   {path: '/error', component: () => import('@/views/error.vue'), name: 'error' },
   {path: '/404', component: () => import('@/404.vue'), name: '404' },
-  { path: '/', redirect: '/home' } // 默认跳转首页
+  { path: '/', redirect: '/home' }, // 默认跳转首页
+  { path: '/allai', component: () => import('@/views/allai.vue'), name: 'allai' }
 ]
 
 export const router = createRouter({

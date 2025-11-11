@@ -1,479 +1,313 @@
 <template>
-  <Carousel autoplay class="notice" effect="fade" dots>
-    <div
-      v-for="(item, index) in noticeItems"
-      :key="index"
-      class="notice-slide"
-    >
-      <div
-        :id="item.id"
-        class="lottie-animation"
-        style="height: 60%; width: 100%;"
-      ></div>
-      <div class="notice-item">
-        <span class="notice-icon">{{ item.icon }}</span>
-        <div class="notice-content">
-          <strong>{{ item.title }}</strong>
-          <span>{{ item.desc }}</span>
+  <div class="app-container">
+    <!-- 顶部栏 -->
+    <header class="top-bar">
+      <div class="left-icon">
+        <img class="icon-notice" src="../assets/消息.png" alt="通知" />
+        <span>通知</span>
+      </div>
+      <div class="right-icon">
+        <img class="icon-camera" src="../assets/相机.png" alt="相机" />
+        <span>拍照上传</span>
+      </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <h1>DAILY PRACTISE</h1>
+      <div class="card-group">
+        <!-- 计划制定卡片 -->
+        <div class="card plan-card">
+          <img src="../assets/书包.png" alt="计划制定" class="card-icon" />
+          <h3>计划制定</h3>
+          <p>为你定制今日学习计划，确定学习目标，增强学习动力，提高学习效率...</p>
+          <button class="card-btn">去制定</button>
+        </div>
+
+        <!-- 每日一句卡片 -->
+        <div class="card sentence-card">
+          <img src="../assets/闹钟.png" alt="每日一句" class="card-icon2" />
+          <h3>每日一句</h3>
+          <p>那些看似不起波澜的日复一日，会突然在某一天让人看到坚持的意义。</p>
+          <div class="like-group">
+            <img class="icon-heart" src="../assets/爱心.png" alt="点赞" />
+            <img class="icon-star" src="../assets/五角星.png" alt="收藏" />
+            <img class="icon-bookmark" src="../assets/书签.png" alt="书签" />
+          </div>
+          <button class="card-btn2">去学习</button>
+
         </div>
       </div>
-    </div>
-  </Carousel>
 
-  <!-- 引导区标题 -->
-  <div class="section-title">
-    <span class="icon">🎯</span>
-    <span class="text">引导区</span>
-  </div>
-
-  <div class="wenjuan">
-    <div class="left">
-      <img src="../assets/问卷.png" class="wenjuan-icon" />
-      <a-button type="dashed" danger style="font-size: 8px;" @click="into('customization')">
-        点击进入个性化定制
-      </a-button>
-    </div>
-    <div class="wenjuan-text">
-      <img src="../assets/问卷背景.png" style="height: 100%; width: 100%;" />
-    </div>
-  </div>
-
-  <div class="section-title">
-    <span class="icon">✨</span>
-    <span class="text">功能区</span>
-  </div>
-
-  <div class="function">
-    <div class="item" @click="into('ai')">
-      <img src="../assets/Al.png" alt="小智助手" />
-      <div class="text">小智助手</div>
-    </div>
-    <div class="item">
-      <img src="../assets/单词.png" alt="单词宝典" />
-      <div class="text">单词宝典</div>
-    </div>
-    <div class="item">
-      <img src="../assets/问答库.png" alt="智能答疑" />
-      <div class="text">智能答疑</div>
-    </div>
-  </div>
-
-  <div class="function">
-    <div class="item">
-      <img src="../assets/人脸数据分析.png" alt="就业分析" />
-      <div class="text">就业分析</div>
-    </div>
-    <div class="item" @click="into('test')">
-      <img src="../assets/维修档案.png" alt="测试生成" />
-      <div class="text">测试生成</div>
-    </div>
-    <div class="item">
-      <img src="../assets/风险预知.png" alt="风险预知" />
-      <div class="text">风险预知</div>
-    </div>
-  </div>
-
-  <div class="course" v-if="showTable">
-    <CourseTable />
-  </div>
-
-  <!-- 课表图片识别 -->
-  <div class="course" v-if="!showTable">
-    <a-upload-dragger
-      v-bind="uploadProps"
-      @change="handleChange"
-      @drop="handleDrop"
-    >
-      <p class="ant-upload-drag-icon">
-        <inbox-outlined />
-      </p>
-      <p class="ant-upload-text">请上传课表图片文件进行识别!</p>
-      <p class="ant-upload-hint">
-        Support for a single or bulk upload. Strictly prohibited from uploading company data or other
-        banned files.
-      </p>
-    </a-upload-dragger>
-  </div>
-
-  <!-- 课程确认弹窗 -->
-  <Modal
-    title="📖课程确认"
-    :open="isModalOpen"
-    @ok="handleOk"
-    @cancel="handleCancel"
-    :centered="true"
-    width="800px"
-  >
-    <div style="max-height: 70vh; overflow-y: auto; padding: 0 20px;">
-      <div v-for="(item, index) in classData" :key="index" style="border-bottom: 1px skyblue solid;">
-        <div style="display: flex; flex-direction: row; width: 100%;">
-          <a-input
-            :value="item.name"
-            @update:value="val => item.name = val"
-            placeholder="课程名"
-            style="flex: 1;"
-          />
-          <a-input
-            :value="item.teacher"
-            @update:value="val => item.teacher = val"
-            placeholder="授课老师"
-            style="flex: 1;"
-          />
+      <!-- 功能图标区 -->
+      <div class="function-grid">
+        <div class="function-item">
+          <img class="icon-assistant" src="../assets/1.png" alt="小智助手" />
+          <span>小智助手</span>
         </div>
-        <div style="display: flex; flex-direction: row; width: 100%;">
-          <a-input
-            :value="item.week"
-            @update:value="val => item.week = val"
-            placeholder="礼拜"
-            style="flex: 1;"
-          />
-          <a-input
-            :value="item.location"
-            @update:value="val => item.location = val"
-            placeholder="教室"
-            style="flex: 1;"
-          />
-          <a-input
-            :value="item.color"
-            @update:value="val => item.color = val"
-            placeholder="颜色"
-            style="flex: 1;"
-          />
+        <div class="function-item">
+          <img class="icon-wordbook" src="../assets/2.png" alt="单词宝典" />
+          <span>单词宝典</span>
         </div>
-        <div style="margin: 10px 0;">
-          <span>选择节次：</span>
-          <a-checkbox-group
-            :value="item.num"
-            :options="timeOptions"
-            style="display: flex; flex-wrap: wrap; gap: 8px;"
-            @update:value="(val) => item.num = val"
-          />
+        <div class="function-item">
+          <img class="icon-qa" src="../assets/3.png" alt="智能答疑" />
+          <span>智能答疑</span>
+        </div>
+        <div class="function-item">
+          <img class="icon-analysis" src="../assets/4.png" alt="就业分析" />
+          <span>就业分析</span>
+        </div>
+        <div class="function-item">
+          <img class="icon-test" src="../assets/5.png" alt="测试生成" />
+          <span>测试生成</span>
+        </div>
+        <div class="function-item">
+          <img class="icon-warning" src="../assets/6.png" alt="风险预知" />
+          <span>风险预知</span>
         </div>
       </div>
-      <div style="text-align: center; margin-top: 20px;">
-        <a-button type="dashed" @click="addNewCourse">
-          <PlusCircleOutlined /> 新增一行课程
-        </a-button>
+
+      <!-- 日程区 -->
+      <div class="schedule-section">
+        <h2>MY SCHEDUAL</h2>
+        <div class="todo-list">
+          <h3>To Do List</h3>
+          <ul>
+            <li>
+              <i class="icon-check"></i>
+              <span>英语阅读1</span>
+            </li>
+            <li>
+              <i class="icon-check"></i>
+              <span>微积分</span>
+            </li>
+            <li>
+              <i class="icon-check"></i>
+              <span>中国共产党史</span>
+            </li>
+          </ul>
+          <button class="add-btn">+</button>
+        </div>
       </div>
-    </div>
-  </Modal>
+    </main>
+
+    <!-- 底部导航 -->
+    <footer class="bottom-nav">
+      <div class="nav-item">
+        <i class="icon-home"></i>
+        <span>首页</span>
+      </div>
+      <div class="nav-item">
+        <i class="icon-progress"></i>
+        <span>学习进度</span>
+      </div>
+      <div class="nav-item">
+        <i class="icon-ai"></i>
+        <span>AI陪伴</span>
+      </div>
+      <div class="nav-item">
+        <i class="icon-mine"></i>
+        <span>我的</span>
+      </div>
+    </footer>
+  </div>
 </template>
 
-<script setup>
-import { Modal } from 'ant-design-vue'
-import { Carousel } from 'ant-design-vue'
-import { onMounted, onUnmounted, ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import CourseTable from '@/components/CourseTable.vue'
-import { InboxOutlined, PlusCircleOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
-import axios from 'axios'
-import { addclass, getclass } from '@/api/class.js'
-import lottie from 'lottie-web'
-
-// 🎯 Lottie 动画文件
-import lottieJson from '@/assets/animate/答疑.json'
-import lottieJson1 from '@/assets/animate/进度分析.json'
-import lottieJson2 from '@/assets/animate/错题分析.json'
-import lottieJson3 from '@/assets/animate/风险预测.json'
-
-// ==================== 轮播图数据 + 动画管理 ====================
-const noticeItems = reactive([
-  {
-    id: 'lottie_0',
-    icon: '🧠',
-    title: '智能答疑',
-    desc: '随时解答难题，学习不卡壳',
-    json: lottieJson,
-  },
-  {
-    id: 'lottie_1',
-    icon: '📊',
-    title: '进度追踪',
-    desc: '学习路径可视化，目标更清晰',
-    json: lottieJson1,
-  },
-  {
-    id: 'lottie_2',
-    icon: '🔍',
-    title: '错题分析',
-    desc: '精准定位薄弱点，高效提分',
-    json: lottieJson2,
-  },
-  {
-    id: 'lottie_3',
-    icon: '⚠️',
-    title: '风险预知',
-    desc: '提前预警学习风险，防患未然',
-    json: lottieJson3,
-  },
-])
-
-// 🎬 统一初始化函数
-function initLottie(item) {
-  const container = document.getElementById(item.id)
-  if (!container) return
-
-  if (item.animation) {
-    item.animation.destroy()
-  }
-
-  item.animation = lottie.loadAnimation({
-    container,
-    renderer: 'svg',
-    loop: true,
-    autoplay: true,
-    animationData: item.json,
-  })
-}
-
-onMounted(() => {
-  noticeItems.forEach(initLottie)
-
-  // 检查是否有课表数据
-  getclass().then(res => {
-    if (res.data?.course?.course?.length > 0) {
-      showTable.value = true
+<script>
+export default {
+  name: 'StudyAppPage',
+  data() {
+    return {
+      // 可根据需求添加数据
     }
-  })
-})
-
-onUnmounted(() => {
-  noticeItems.forEach(item => {
-    if (item.animation) {
-      item.animation.destroy()
-    }
-  })
-})
-
-// ==================== 其他功能逻辑 ====================
-const showTable = ref(false)
-const router = useRouter()
-const isModalOpen = ref(false)
-const classData = reactive([
-  {
-    name: '计算机组成原理',
-    week: '五',
-    num: [5, 6],
-    teacher: '赵六',
-    location: 'C304',
-    color: '#9370DB',
   },
-])
-
-const timeOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: `${i + 1}`,
-  value: i + 1,
-}))
-
-const into = (name) => {
-  router.push({ name })
-}
-
-// 上传逻辑
-const customUploadRequest = async ({ file, onSuccess, onError, onProgress }) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  const token = localStorage.getItem('token')
-
-  if (!token) {
-    message.error('未检测到登录凭证，请先登录')
-    onError(new Error('No token provided'))
-    return
-  }
-
-  try {
-    const response = await axios.post(
-      import.meta.env.VITE_APP_BASE_API + '/IndividualPlaning/create',
-      formData,
-      {
-        headers: { Authorization: token },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total > 0) {
-            const percent = Math.floor((progressEvent.loaded * 100) / progressEvent.total)
-            onProgress({ percent })
-          }
-        },
-      }
-    )
-
-    if (response.data.code === 1) {
-      message.success(`${file.name} 课表图片识别成功`)
-      Object.assign(classData, response.data.data.output)
-      showModal()
-    }
-  } catch (error) {
-    console.error('上传失败:', error)
-    onError(error)
-    message.error(`${file.name} 上传失败：${error.message || '网络错误'}`)
+  methods: {
+    // 可添加按钮点击等方法
   }
 }
-
-const uploadProps = {
-  name: 'file',
-  multiple: true,
-  customRequest: customUploadRequest,
-}
-
-const showModal = () => {
-  isModalOpen.value = true
-}
-
-const handleOk = async () => {
-  const res = await addclass(classData)
-  if (res.code === 1) {
-    showTable.value = true
-  }
-  isModalOpen.value = false
-}
-
-const handleCancel = () => {
-  isModalOpen.value = false
-}
-
-const addNewCourse = () => {
-  classData.push({
-    name: '',
-    teacher: '',
-    week: '',
-    location: '',
-    color: '#1890ff',
-    num: [],
-  })
-}
-
-// 占位函数（你原代码有，但未实现）
-const handleChange = () => {}
-const handleDrop = () => {}
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+.app-container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f0e6fa, #e0f0fa);
+  font-family: 'Arial', sans-serif;
+}
 
-.section-title {
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  align-items: center;
+}
+
+.left-icon, .right-icon {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 20px 0 10px 10px;
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-weight: 600;
-  font-size: 18px;
-  color: #4a4a4a;
-  letter-spacing: 0.5px;
-}
-.section-title .icon {
-  font-size: 20px;
-}
-.section-title .text::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: linear-gradient(to bottom, #46b8ff, #1890ff);
-  border-radius: 2px;
-}
-
-.notice {
-  height: 20%;
-  width: 100%;
-}
-.notice-slide {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 20vh;
-  width: 100%;
-
 }
-.notice-item {
+
+.icon-assistant, .icon-wordbook, .icon-qa, .icon-analysis, .icon-test, .icon-warning, .icon-check, .icon-home, .icon-progress, .icon-ai, .icon-mine {
+  width: 50px;
+  margin-right: 8px;
+}
+
+.icon-heart, .icon-star, .icon-bookmark{
+  width: 12px;
+  height: 12px;
+}
+.icon-notice, .icon-camera{
+  width: 30px;
+  height: 30px;
+}
+
+.main-content {
+  padding: 0 16px;
+}
+
+h1, h2, h3 {
+  font-weight: bold;
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+.card-group {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.card {
+  flex: 1;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.plan-card {
+  background-color: rgba(230, 214, 250, 0.8);
+}
+
+.sentence-card {
+  background-color: rgba(224, 240, 250, 0.8);
+}
+
+.card-icon {
+  width: 64px;
+  height: 65px;
+  margin-bottom: 9px;
+  margin-top: 6px;
+}
+.card-icon2 {
+  width: 64px;
+  height: 80px;
+}
+.card-btn {
+  background-color: #b898e6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
   padding: 8px 16px;
-  border-radius: 50px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-size: 14px;
-  color: #333;
-}
-.notice-icon {
-  font-size: 24px;
-}
-.notice-content strong {
-  font-weight: 600;
-}
-.notice-content span {
-  font-size: 12px;
-  color: #666;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
-.wenjuan {
-  height: 15vh;
-  width: 95%;
-  margin: 10px auto;
-  background-color: #46b8ff;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(70, 184, 255, 0.2);
-  color: white;
+.sentence-card .card-btn {
+  background-color: #98c9e6;
 }
-.left {
-  height: 100%;
-  width: 25%;
+
+.card-btn2 {
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  margin-top: 15px;
+  background-color: #98c9e6;
+}
+
+.like-group {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
 }
-.wenjuan-icon {
-  height: 60%;
-  width: auto;
-  opacity: 0.95;
-}
-.wenjuan-text {
-  width: 75%;
-  height: 100%;
+
+.function-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background-color: rgba(224, 240, 250, 0.8);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 32px;
 }
 
-.function {
-  height: 10%;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  padding: 0 10px;
-  box-sizing: border-box;
-}
-.function .item {
+.function-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-.function img {
-  height: 60%;
-  width: auto;
-}
-.function .text {
-  font-size: 12px;
-  color: #333;
+  padding: 8px;
 }
 
-.course {
-  width: 100%;
-  height: 20vh;
+.schedule-section h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
 }
 
-@media (max-width: 768px) {
-  .section-title { font-size: 16px; }
-  .notice-item { font-size: 13px; padding: 6px 12px; }
-  .notice-icon { font-size: 20px; }
-  .notice-content strong { font-size: 13px; }
-  .notice-content span { font-size: 11px; }
+.todo-list {
+  text-align: center;
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 8px rgba(0, 0, 0, 0.1);
+}
+.todo-list h3 {
+  font-size: 25px;
+}
+.todo-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.add-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #9848e6;
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px;
+  background-color: #fff;
+  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 </style>
