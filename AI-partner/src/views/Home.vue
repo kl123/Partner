@@ -44,9 +44,9 @@
   </div>
 
   <div class="function">
-    <div class="item" @click="into('ai')">
-      <img src="../assets/Al.png" alt="小智助手" />
-      <div class="text">小智助手</div>
+    <div class="item" @click="into('ai-buddy')">
+      <img src="../assets/Al.png" alt="智能AI学习搭子" />
+      <div class="text">智能AI学习搭子</div>
     </div>
     <div class="item">
       <img src="../assets/单词.png" alt="单词宝典" />

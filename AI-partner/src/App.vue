@@ -35,6 +35,7 @@ const tabs = [
   { key: 'home', title: '首页', icon: HomeOutlined ,path: '/home'},
   { key: 'study', title: '学习进度', icon: NodeIndexOutlined , path: '/study'},
   { key: 'ai', title: 'AI陪伴', icon: AliwangwangOutlined ,path: '/ai'},
+  { key: 'lazy', title: '偷懒检测', icon: HomeOutlined , path: '/lazy-check' },
   { key: 'profile', title: '我的', icon: TeamOutlined ,path: '/profile'}
 ]
 
