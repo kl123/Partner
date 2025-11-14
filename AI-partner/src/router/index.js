@@ -20,7 +20,9 @@ const routes = [
   {path: '/error', component: () => import('@/views/error.vue'), name: 'error' },
   {path: '/404', component: () => import('@/404.vue'), name: '404' },
   { path: '/', redirect: '/home' }, // 默认跳转首页
-  { path: '/allai', component: () => import('@/views/allai.vue'), name: 'allai' }
+  { path: '/allai', component: () => import('@/views/allai.vue'), name: 'allai' },
+  {path: '/ins', component: () => import('@/views/ins.vue'), name: 'ins' },
+  {path: '/focus', component: () => import('@/views/focus.vue'), name: 'focus' },
 ]
 
 export const router = createRouter({
