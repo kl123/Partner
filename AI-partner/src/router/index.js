@@ -23,6 +23,7 @@ const routes = [
   { path: '/allai', component: () => import('@/views/allai.vue'), name: 'allai' },
   {path: '/ins', component: () => import('@/views/ins.vue'), name: 'ins' },
   {path: '/focus', component: () => import('@/views/focus.vue'), name: 'focus' },
+  {path: '/camera', component: () => import('@/views/camera.vue'), name: 'camera' },
 ]
 
 export const router = createRouter({
