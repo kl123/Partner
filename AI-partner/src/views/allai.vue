@@ -1,4 +1,4 @@
-<template>
+/<template>
   <div class="app-container">
     <!-- 头部区域（无背景） -->
     <header class="header">
