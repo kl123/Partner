@@ -1,294 +1,239 @@
 <template>
-    <div class="linear-timeline-container">
-      <a-typography-title :level="2" style="text-align: center; color: #1890ff; margin-bottom: 40px">
-        📚 {{ subject }}的学习路径
-      </a-typography-title>
+  <div class="container">
+    <!-- 外层浅蓝色背景卡片 -->
+    <div class="outer-card">
+      <!-- 顶部学习卡片（背景改为淡蓝色） -->
+      <div class="top-card">
+        <h2>English <span class="difficulty">难度: ★★★</span></h2>
+        <div class="time-progress">
+          <p>剩余时间: 20min</p>
+          <div class="progress-circle">
+            <div class="progress-bg"></div>
+            <div class="progress-fill" style="width: 70%"></div>
+            <span class="progress-text">70%</span>
+          </div>
+        </div>
+        <p class="description">说明: 英语学习锻炼听说读写译能力，通过扩大词汇量，了解英语语法，锻炼听说能力的方法，来提高英语能力...</p>
+      </div>
+    </div>
 
-
-      <!-- 返回按钮 -->
-      <div class="back-button" @click="goBack" style="cursor: pointer; margin-bottom: 16px;" v-if="!showStatus">
-        <LeftOutlined /> 返回
+    <!-- 听力和单词模块的总背景卡片 -->
+    <div class="modules-container">
+      <!-- 英语听力模块 -->
+      <div class="module blue">
+        <h3>英语听力</h3>
+        <ul class="task-list">
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>Dictation</span>
+          </li>
+          <li>
+            <input type="radio" disabled>
+            <span>长对语文本2篇</span>
+          </li>
+        </ul>
       </div>
 
-      <a-timeline mode="center" v-if="showStatus">
-        <a-timeline-item
-          v-for="(item, index) in timelineItems"
-          :key="index"
-          :color="getDotColor(index)"
-        >
-          <!-- 小卡片位于小圆点下方 -->
-          <div class="timeline-card-below">
-            <a-card
-              :bordered="false"
-              class="timeline-card"
-              :class="`gradient-${index + 1}`"
-            >
-              <template #title>
-                <span style="color: white; font-weight: bold">{{ item.display_name}}</span>
-              </template>
-  
-              <!-- 内容区域 -->
-              <div class="card-content">
-                <!-- 难度 -->
-                <div class="card-row">
-                  <strong>🎯 难度：</strong>
-                  <span class="difficulty-stars">
-                    {{ '⭐'.repeat(item.difficulty) }}
-                  </span>
-                </div>
-  
-                <!-- 计划时间 -->
-                <div class="card-row">
-                  <strong>🕒 计划时间：</strong>
-                  <span>{{ item.dayNum }} 天</span>
-                </div>
-  
-                <!-- 描述 -->
-                <div class="card-row">
-                  <strong>📌 说明：</strong>
-                  <span>{{ item.description }}</span>
-                </div>
-                
-                <!-- 学习进度条 -->
-                <div class="card-row" style="margin: 12px 0;">
-                  <strong>📊 学习进度：</strong>
-                  <a-progress
-                    :percent="Math.round(item.proficiency * 100)"
-                    :stroke-color="item.proficiency === 1 ? '#52c41a' : '#1890ff'"
-                    :size="['small']"
-                    :show-info="false"
-                    style="margin-top: 4px;"
-                  />
-                </div>
-              
-
-                <!-- 状态标签 -->
-                <div class="card-row" style="text-align: right;">
-                  <!-- 使用 v-if / v-else 切换标签 -->
-                  <a-tag
-                    v-if="item.proficiency === 1"
-                    color="success"
-                  >
-                    <CheckCircleOutlined/>已完结
-                  </a-tag>
-                
-                  <a-tag
-                    v-else
-                    color="default"
-                  >
-                    <MinusCircleOutlined/>待学习中
-                  </a-tag>
-                </div>
-
-                <!-- 按钮 -->
-                <div class="card-row" style="text-align: right; margin-top: 12px">
-                  <a-button
-                    type="primary"
-                    size="small"
-                    shape="round"
-                    @click="handleStart(item)"
-                  >
-                    ▶️ 进入学习
-                  </a-button>
-                </div>
-              </div>
-            </a-card>
-          </div>
-        </a-timeline-item>
-      </a-timeline>
-
-      <router-view v-if="!showStatus"/>
+      <!-- 英语单词模块 -->
+      <div class="module light-blue">
+        <h3>英语单词</h3>
+        <ul class="task-list">
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>学习50个新单词</span>
+          </li>
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>复习50个单词</span>
+          </li>
+        </ul>
+      </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref,onMounted,watch } from "vue"
-  import { LeftOutlined, CheckCircleOutlined,MinusCircleOutlined } from '@ant-design/icons-vue';
-  import { getNodes } from "@/api/Study"
-  import { Typography, Timeline, Card, Button } from 'ant-design-vue';
-  import { useRouter,useRoute } from 'vue-router'
-  
-  const router = useRouter()
-  const route = useRoute()
-  const showStatus = ref(true)
-  // 注册组件
-  const ATypographyTitle = Typography.Title;
-  const ATimeline = Timeline;
-  const ATimelineItem = Timeline.Item;
-  const ACard = Card;
-  const AButton = Button;
-  const subject = route.query.subject
-  onMounted(()=>{
-    requestNode()
-  })
-  // 学习路径数据（增强版）
-  const timelineItems = ref([
-    {
-      display_name: '路径1：离散数学',
-      difficulty: 2,
-      difficultyText: '中等',
-      proficiency:0.5,
-      dayNum: 10,
-      description: '学习集合、逻辑、图论等基础数学知识，为算法打下坚实基础。',
-    },
-    {
-      display_name: '路径2：数据结构与算法',
-      difficulty: 3,
-      difficultyText: '困难',
-      proficiency:0.3,
-      dayNum: 21,
-      description: '掌握数组、链表、栈、队列、树、图等结构及常见算法实现。',
-    },
-    {
-      display_name: '路径3：前端开发入门',
-      difficulty: 1,
-      difficultyText: '简单',
-      dayNum: 14,
-      proficiency:1,
-      description: '学习 HTML、CSS、JavaScript 和 Vue 基础，完成静态页面开发。',
-    },
-    {
-      display_name: '路径4：算法进阶实战',
-      difficulty: 3,
-      difficultyText: '困难',
-      dayNum: 30,
-      description: '深入动态规划、贪心、回溯等高级算法，结合 LeetCode 实战训练。',
-    },
-  ]);
-  
-  // 小圆点颜色（与卡片渐变起始色一致）
-  const getDotColor = (index) => {
-    const colors = [
-      '#ff7e5f', // gradient-1
-      '#6a11cb', // gradient-2
-      '#00b4db', // gradient-3
-      '#86a8e7', // gradient-4
-      '#f9cb40', // gradient-5
-      '#e94d6b', // gradient-6
-      '#4ecdc4', // gradient-7
-      '#6c5ce7', // gradient-8
-      '#fd79a8', // gradient-9
-      '#a55eea'  // gradient-10
-    ];
-    return colors[index % colors.length];
-  };
-  
-  //获取学习路径上的知识点
-  const requestNode = async() => {
-    const id = route.query.pathId
-    const res = await getNodes(id)
-    console.log(res);
-    timelineItems.value = res.data
-  }
 
-  // 模拟点击“进入学习”
-  const handleStart = (item) => {
-    console.log('🚀 开始学习:', item.display_name);
-    showStatus.value = false
-    // 这里可以跳转页面，比如：
-    router.push({
-      name:"video",
-      query:{
-      title:item.display_name
-    }
-  })
-      //进行本地存储
-      localStorage.setItem('pathId', item.pathId)
-      localStorage.setItem('concept_id', item.conceptId)
-      localStorage.setItem('progress', item.proficiency)
-  };
-  const goBack = () =>{
-    showStatus.value = true
-  }
-  </script>
-  
-  <style scoped>
-  .back-button {
+    <!-- 底部提示 -->
+    <div class="task-tip">
+      本章节的学习任务结束啦<br>
+      开启下一章节学习吧~
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* 背景改为蓝色→白色→蓝色的垂直渐变 */
+.container {
+  background: linear-gradient(to bottom, #66b3ff 0%, #ffffff 50%, #66b3ff 100%);
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", sans-serif;
+}
+
+/* 外层浅蓝色背景卡片 */
+.outer-card {
+  background-color: #e6f2ff; /* 浅蓝色背景 */
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* 顶部学习卡片 - 背景改为淡蓝色 */
+.top-card {
+  background-color: #f0f8ff; /* 淡蓝色背景（比外层卡片更浅） */
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.top-card h2 {
+  margin: 0 0 15px 0;
+  font-size: 24px;
+  color: #1a73e8; /* 加深标题颜色，提升可读性 */
+}
+
+.difficulty {
+  font-size: 16px;
+  color: #5f6368;
+  margin-left: 10px;
+}
+
+.time-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap; /* 适配小屏幕 */
+  gap: 15px;
+}
+
+.progress-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  overflow: hidden;
+}
+
+.progress-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #e6f2ff;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #1a73e8; /* 调整进度条颜色，更醒目 */
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  font-weight: bold;
+  color: #1a73e8;
+}
+
+.description {
+  font-size: 14px;
+  color: #424242;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 听力和单词模块的总背景卡片 */
+.modules-container {
+  background-color: #e6f2ff; /* 与顶部外层卡片同色，保持统一 */
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.module {
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px; /* 模块之间的间距 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 移除最后一个模块的底部间距 */
+.module:last-child {
+  margin-bottom: 0;
+}
+
+.module h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #1890ff;
-  font-size: 16px;
-  font-weight: 500;
 }
-  .linear-timeline-container {
-    padding: 40px 20px;
-    background-color: #f8f9fa;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .timeline-card-below {
-    display: flex;
-    justify-content: center;
-    margin-top: 12px;
-    margin-bottom: 24px;
-    width: 100%;
-  }
-  
-  .timeline-card {
-    width: 100%;
-    max-width: 400px;
-    border-radius: 14px !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: white;
-    transition: all 0.3s ease;
-    overflow: hidden;
-  }
-  
-  .timeline-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  }
-  
-  /* 卡片内容样式 */
-  .card-content {
-    font-size: 14px;
-    line-height: 1.6;
-  }
-  
-  .card-row {
-    margin-bottom: 8px;
-  }
-  
-  .difficulty-stars {
-    margin-left: 6px;
-    font-size: 16px;
-  }
-  
-  /* --- 渐变背景 --- */
-  .gradient-1  { background: linear-gradient(135deg, #ff7e5f, #feb47b); }
-  .gradient-2  { background: linear-gradient(135deg, #6a11cb, #2575fc); }
-  .gradient-3  { background: linear-gradient(135deg, #00b4db, #0083b0); }
-  .gradient-4  { background: linear-gradient(135deg, #86a8e7, #91eae4); }
-  .gradient-5  { background: linear-gradient(135deg, #f9cb40, #f8b500); }
-  .gradient-6  { background: linear-gradient(135deg, #e94d6b, #ef7e8b); }
-  .gradient-7  { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
-  .gradient-8  { background: linear-gradient(135deg, #6c5ce7, #a55eea); }
-  .gradient-9  { background: linear-gradient(135deg, #fd79a8, #e84393); }
-  .gradient-10 { background: linear-gradient(135deg, #a55eea, #7a4fed); }
-  
-  /* --- 响应式适配 --- */
-  @media (max-width: 768px) {
-    .linear-timeline-container {
-      padding: 20px 12px;
-    }
-  
-    .timeline-card {
-      max-width: 320px;
-      border-radius: 12px;
-    }
-  
-    .timeline-card-below {
-      margin-top: 8px;
-      margin-bottom: 16px;
-    }
-  
-    .card-content {
-      font-size: 13px;
-    }
-  }
-  </style>
+
+/* 为模块标题添加图标样式（可选，增强视觉） */
+.module h3::before {
+  content: "📚";
+  margin-right: 8px;
+}
+
+.blue {
+  background-color: #66b3ff;
+  color: #fff;
+}
+
+.light-blue {
+  background-color: #cce5ff;
+  color: #333;
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.task-list li input {
+  margin-right: 10px;
+  transform: scale(1.1); /* 放大复选框/单选框，提升交互感 */
+}
+
+.task-list li.completed span {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.task-tip {
+  text-align: center;
+  color: #5f6368;
+  margin: 40px 0 20px;
+  font-size: 15px;
+  line-height: 1.8;
+  padding-bottom: 20px;
+}
+</style>
+
+<script>
+export default {
+  name: "StudyPage",
+  data() {
+    return {
+      // 可根据实际需求添加数据
+    };
+  },
+};
+</script>
