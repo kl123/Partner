@@ -14,7 +14,8 @@
     <!-- 家庭监控标题区 -->
     <div class="home-header">
       <h1>家庭监控中心 ▼</h1>
-      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn" @click="refreshDevices">🔄</span></p>
+      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn"
+          @click="refreshDevices">🔄</span></p>
     </div>
 
     <!-- 快速操作场景区 -->
@@ -30,7 +31,7 @@
     <!-- 监控设备列表区 -->
     <div class="devices-area">
       <div class="devices-header">
-        全部监控设备 
+        全部监控设备
         <span class="add-device-btn" @click="showAddDeviceModal = true">+ 添加设备</span>
       </div>
       <div class="devices-list">
@@ -40,7 +41,7 @@
             {{ device.online ? '在线' : '离线' }}
           </div>
           <div class="device-name">
-            {{ device.name }} 
+            {{ device.name }}
             <span class="device-type">{{ device.type }}</span>
           </div>
           <div class="device-preview" @click="viewRealTime(device)">
@@ -113,29 +114,19 @@
         </div>
         <div class="modal-body">
           <p class="modal-tip">请输入设备底部/说明书上的16位设备编码</p>
-          <input 
-            type="text" 
-            v-model="deviceCode" 
-            placeholder="例如：SN_8A3F92B7C1D4E6G8"
-            maxlength="16"
-            @input="formatDeviceCode"
-            class="device-code-input"
-          >
+          <input type="text" v-model="deviceCode" placeholder="例如：SN_8A3F92B7C1D4E6G8" maxlength="16"
+            @input="formatDeviceCode" class="device-code-input">
           <p class="modal-note">设备编码通常以SN_开头，共16位字符（字母/数字/下划线）</p>
         </div>
         <div class="modal-footer">
           <button class="cancel-btn" @click="showAddDeviceModal = false">取消</button>
-          <button 
-            class="confirm-btn" 
-            @click="bindDeviceByCode"
-            :disabled="!isDeviceCodeValid"
-          >
+          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!isDeviceCodeValid">
             确认绑定
           </button>
         </div>
       </div>
     </div>
-    </div>
+  </div>
 </template>
 
 <script>
@@ -156,19 +147,19 @@ export default {
         { id: 4, name: '仅查看', icon: '' },
       ],
       devices: [
-        { 
-          id: 1, 
-          name: '客厅摄像头', 
-          type: '高清夜视', 
-          online: true, 
-          preview: 'https://picsum.photos/200/150?random=1' 
+        {
+          id: 1,
+          name: '客厅摄像头',
+          type: '高清夜视',
+          online: true,
+          preview: 'https://picsum.photos/200/150?random=1'
         },
-        { 
-          id: 2, 
-          name: '门口摄像头', 
-          type: '人脸识别', 
-          online: true, 
-          preview: 'https://picsum.photos/200/150?random=2' 
+        {
+          id: 2,
+          name: '门口摄像头',
+          type: '人脸识别',
+          online: true,
+          preview: 'https://picsum.photos/200/150?random=2'
         },
       ],
       // 新增添加设备相关数据
@@ -291,7 +282,8 @@ export default {
   background: linear-gradient(to bottom, #2d8cf0 0%, #e8f4f8 100%);
   color: #333;
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  padding-bottom: 80px; /* 预留底部导航空间 */
+  padding-bottom: 80px;
+  /* 预留底部导航空间 */
 }
 
 /* 顶部栏 */
@@ -302,16 +294,19 @@ export default {
   padding: 16px;
   color: #fff;
 }
+
 .time {
   font-size: 18px;
   font-weight: 500;
 }
+
 .network {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
 }
+
 .battery {
   padding: 2px 4px;
   background: rgba(255, 255, 255, 0.2);
@@ -323,12 +318,14 @@ export default {
   text-align: center;
   margin: 20px 0;
 }
+
 .home-header h1 {
   font-size: 32px;
   font-weight: 600;
   color: #fff;
   margin: 0;
 }
+
 .device-status {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
@@ -338,10 +335,12 @@ export default {
   justify-content: center;
   gap: 8px;
 }
+
 .refresh-btn {
   cursor: pointer;
   font-size: 16px;
 }
+
 .refresh-btn:active {
   transform: rotate(180deg);
   transition: transform 0.5s;
@@ -355,40 +354,47 @@ export default {
   margin-bottom: 24px;
   gap: 12px;
 }
+
 .scene-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   flex: 1;
 }
+
 .scene-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   padding: 16px;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s;
 }
+
 .scene-card:active {
   transform: scale(0.95);
 }
+
 .scene-icon {
   font-size: 28px;
   margin-bottom: 8px;
 }
+
 .scene-name {
   font-size: 16px;
   font-weight: 500;
 }
+
 .monitor-alert {
   background: linear-gradient(to bottom, #ff7a45, #ff4d4f);
   color: #fff;
   border-radius: 12px;
   padding: 16px;
   flex: 1;
-  box-shadow: 0 4px 12px rgba(255,77,79,0.3);
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
 }
+
 .monitor-alert h3 {
   font-size: 18px;
   margin: 0 0 8px;
@@ -396,16 +402,19 @@ export default {
   align-items: center;
   gap: 8px;
 }
+
 .alert-time {
   font-size: 12px;
   opacity: 0.9;
   margin: 0 0 4px;
 }
+
 .alert-content {
   font-size: 14px;
   margin: 0 0 16px;
   line-height: 1.4;
 }
+
 .check-btn {
   background: #fff;
   color: #ff4d4f;
@@ -418,6 +427,7 @@ export default {
   width: 100%;
   transition: background 0.2s;
 }
+
 .check-btn:active {
   background: #f5f5f5;
 }
@@ -427,6 +437,7 @@ export default {
   padding: 0 16px;
   margin-bottom: 24px;
 }
+
 .devices-header {
   font-size: 18px;
   font-weight: 500;
@@ -436,8 +447,9 @@ export default {
   justify-content: space-between;
   align-items: center;
 }
+
 .add-device-btn {
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   color: #2d8cf0;
   font-size: 14px;
   padding: 6px 12px;
@@ -445,19 +457,22 @@ export default {
   cursor: pointer;
   font-weight: 500;
 }
+
 .devices-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
+
 .device-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: relative;
 }
+
 .device-status-badge {
   position: absolute;
   top: 12px;
@@ -467,26 +482,32 @@ export default {
   border-radius: 12px;
   font-weight: 500;
 }
+
 .device-status-badge.online {
   background: #e6f4ea;
   color: #52c41a;
 }
+
 .device-status-badge.offline {
   background: #f5f5f5;
   color: #8c8c8c;
 }
+
 .device-name {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
-  padding-right: 60px; /* 给状态徽章留空间 */
+  padding-right: 60px;
+  /* 给状态徽章留空间 */
 }
+
 .device-type {
   font-size: 12px;
   color: #666;
   margin-left: 4px;
   font-weight: normal;
 }
+
 .device-preview {
   width: 100%;
   height: 120px;
@@ -496,26 +517,30 @@ export default {
   margin: 8px 0;
   cursor: pointer;
 }
+
 .preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .real-time-tag {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   color: #fff;
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 12px;
 }
+
 .device-actions {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
+
 .action-btn {
   flex: 1;
   background: #f5f7fa;
@@ -530,10 +555,12 @@ export default {
   justify-content: center;
   gap: 4px;
 }
+
 .action-btn:active {
   background: #e8f4f8;
   color: #2d8cf0;
 }
+
 .edit-btn {
   display: block;
   margin: 0 auto;
@@ -544,8 +571,9 @@ export default {
   font-size: 14px;
   cursor: pointer;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
 .edit-btn:active {
   background: #f5f5f5;
 }
@@ -554,37 +582,44 @@ export default {
 .tools-area {
   padding: 0 16px;
 }
+
 .tools-header {
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 16px;
   color: #333;
 }
+
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
+
 .tool-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   cursor: pointer;
 }
+
 .tool-card:active {
   transform: scale(0.95);
 }
+
 .tool-icon {
   font-size: 24px;
   margin-bottom: 8px;
   color: #2d8cf0;
 }
+
 .tool-name {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
 }
+
 .tool-desc {
   font-size: 12px;
   color: #666;
@@ -605,6 +640,7 @@ export default {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
 }
+
 .nav-item {
   display: flex;
   flex-direction: column;
@@ -614,13 +650,16 @@ export default {
   cursor: pointer;
   position: relative;
 }
+
 .nav-item.active {
   color: #2d8cf0;
 }
+
 .nav-item i {
   font-size: 24px;
   margin-bottom: 4px;
 }
+
 .notification-badge {
   position: absolute;
   top: -4px;
@@ -649,6 +688,7 @@ export default {
   justify-content: center;
   z-index: 999;
 }
+
 .modal-content {
   background: #fff;
   border-radius: 16px;
@@ -657,6 +697,7 @@ export default {
   padding: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -665,28 +706,34 @@ export default {
   border-bottom: 1px solid #eee;
   padding-bottom: 16px;
 }
+
 .modal-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: #333;
 }
+
 .modal-close {
   font-size: 24px;
   cursor: pointer;
   color: #999;
   transition: color 0.3s;
 }
+
 .modal-close:hover {
   color: #333;
 }
+
 .modal-body {
   margin-bottom: 24px;
 }
+
 .modal-tip {
   font-size: 14px;
   color: #666;
   margin-bottom: 12px;
 }
+
 .device-code-input {
   width: 100%;
   padding: 14px 16px;
@@ -696,20 +743,25 @@ export default {
   outline: none;
   transition: border 0.3s;
 }
+
 .device-code-input:focus {
   border-color: #2d8cf0;
 }
+
 .modal-note {
   font-size: 12px;
   color: #999;
   margin-top: 8px;
   line-height: 1.4;
 }
+
 .modal-footer {
   display: flex;
   gap: 12px;
 }
-.cancel-btn, .confirm-btn {
+
+.cancel-btn,
+.confirm-btn {
   flex: 1;
   padding: 12px 0;
   border: none;
@@ -718,21 +770,26 @@ export default {
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .cancel-btn {
   background: #f5f5f5;
   color: #666;
 }
+
 .cancel-btn:hover {
   background: #eee;
 }
+
 .confirm-btn {
   background: #2d8cf0;
   color: #fff;
 }
+
 .confirm-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
+
 .confirm-btn:not(:disabled):hover {
   background: #1a73e8;
 }
