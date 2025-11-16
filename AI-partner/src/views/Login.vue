@@ -42,7 +42,7 @@
           </button>
         </div>
         <a href="#" class="forgot-link" @click="handleForgotPassword">忘记密码?</a>
-        <button type="submit" class="login-btn" @click="handleLogin">登录</button>
+        <button type="button" class="login-btn" @click="handleLogin">登录</button>
       </form>
 
       <div class="third-party-section">

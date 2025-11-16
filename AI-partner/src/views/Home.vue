@@ -15,13 +15,13 @@
     <!-- 主内容区 -->
     <main class="main-content">
       <h1>DAILY PRACTISE</h1>
-      <div class="card-group">
+      <div class="card-group" >
         <!-- 计划制定卡片 -->
-        <div class="card plan-card">
+        <div class="card plan-card" >
           <img src="../assets/书包.png" alt="计划制定" class="card-icon" />
           <h3>计划制定</h3>
           <p>为你定制今日学习计划，确定学习目标，增强学习动力，提高学习效率...</p>
-          <button class="card-btn">去制定</button>
+          <button class="card-btn" @click="into('customization')">去制定</button>
         </div>
 
         <!-- 每日一句卡片 -->
@@ -41,13 +41,13 @@
 
       <!-- 功能图标区 -->
       <div class="function-grid">
-        <div class="function-item">
+        <div class="function-item" @click="into('ai')">
           <img class="icon-assistant" src="../assets/1.png" alt="小智助手" />
           <span>小智助手</span>
         </div>
-        <div class="function-item">
+        <div class="function-item" @click="into('camera')">
           <img class="icon-wordbook" src="../assets/2.png" alt="单词宝典" />
-          <span>单词宝典</span>
+          <span>监测中心</span>
         </div>
         <div class="function-item">
           <img class="icon-qa" src="../assets/3.png" alt="智能答疑" />
@@ -55,9 +55,9 @@
         </div>
         <div class="function-item">
           <img class="icon-analysis" src="../assets/4.png" alt="就业分析" />
-          <span>就业分析</span>
+          <span>课程表</span>
         </div>
-        <div class="function-item">
+        <div class="function-item" @click="into('test')">
           <img class="icon-test" src="../assets/5.png" alt="测试生成" />
           <span>测试生成</span>
         </div>
@@ -72,19 +72,19 @@
         <h2>MY SCHEDUAL</h2>
         <div class="todo-list">
           <h3>To Do List</h3>
-          <ul>
+          <ul v-for="item in List">
             <li>
               <i class="icon-check"></i>
-              <span>英语阅读1</span>
+              <span>{{item.title}}</span>
             </li>
-            <li>
+            <!-- <li>
               <i class="icon-check"></i>
               <span>微积分</span>
             </li>
             <li>
               <i class="icon-check"></i>
               <span>中国共产党史</span>
-            </li>
+            </li> -->
           </ul>
           <button class="add-btn">+</button>
         </div>
@@ -113,18 +113,25 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'StudyAppPage',
-  data() {
-    return {
-      // 可根据需求添加数据
-    }
-  },
-  methods: {
-    // 可添加按钮点击等方法
-  }
+<script setup>
+import { ref,onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getPlan } from "@/api/Study"
+
+const router = useRouter()
+const count = ref(0)
+const List = ref([])
+const into = (name) => {
+    router.push({ name })
 }
+async function Plans() {
+  const res = await getPlan()
+  List.value=res.data
+  console.log(res);
+}
+onMounted(()=>{
+  Plans()
+})
 </script>
 
 <style scoped>
