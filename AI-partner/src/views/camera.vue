@@ -466,11 +466,7 @@ export default {
       // 实际项目中可添加场景执行逻辑（如控制设备开关、模式切换等）
     },
     viewRealTimeCamera(cam) {
-      if (cam.online) {
-        alert(`查看${cam.name}实时数据`);
-      } else {
-        alert(`${cam.name}当前离线，无法查看实时数据`);
-      }
+      this.$router.push({ path: '/monitor', query: { devId: cam.devId } });
     },
     setDevice(device) {
       alert(`进入${device.name}设置页面`);
