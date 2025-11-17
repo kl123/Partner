@@ -13,9 +13,14 @@
 
     <!-- 家庭监控标题区 -->
     <div class="home-header">
-      <h1>学习设备中心 ▼</h1>
-      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn"
-          @click="refreshDevices">🔄</span></p>
+      <button class="header-toggle" @click="toggleStatus" :aria-expanded="showStatusPanel">
+        <span class="title-text">学习设备中心</span>
+        <span class="arrow" :class="{ open: showStatusPanel }">▲</span>
+      </button>
+      <transition name="fade-slide">
+        <p v-if="showStatusPanel" class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span
+            class="refresh-btn" @click="refreshDevices">🔄</span></p>
+      </transition>
     </div>
 
     <!-- 快速操作场景区 -->
@@ -33,20 +38,20 @@
       <div class="devices-header">
         <span>全部学习设备</span>
         <div class="header-controls">
-          
-          
+
+
           <span class="add-device-btn" @click="showAddDeviceModal = true">+ 添加设备</span>
         </div>
       </div>
       <div class="devices-list">
         <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id">
-          <div class="device-status-badge" :class="cam.online ? 'online' : 'offline'">
-            {{ cam.online ? '在线' : '离线' }}
-          </div>
-          <div class="device-name">
-            {{ cam.name }}
-            <span class="device-type">{{ cam.type }}</span>
-          </div>
+          <button @click="refreshOnlineStatus(cam)" class="device-status-badge"
+            :class="[cam.online ? 'online' : 'offline', { loading: cam.loading }]">
+            <span v-if="!cam.loading">{{ cam.online ? '在线' : '离线' }}</span>
+            <span v-else class="spinner-icon"><SyncOutlined spin /></span>
+          </button>
+          <div class="device-name">{{ cam.name }}</div>
+          <div class="device-type">{{ cam.type }}</div>
           <div class="device-preview" @click="viewRealTimeCamera(cam)">
             <img :src="cam.preview" alt="摄像头预览" class="preview-img">
             <div class="real-time-tag">实时数据</div>
@@ -109,21 +114,21 @@
     <div class="accessory-drawer" :style="{ bottom: drawerBottomOffset + 'px', zIndex: drawerZIndex }">
       <div class="drawer-container"
         :style="{ height: (drawerHandleHeight + (drawerPanelFullHeight - drawerTranslateY)) + 'px', transition: dragging ? 'none' : 'height 0.2s ease' }">
-        <div class="drawer-handle"
-          @click="onDrawerHandleClick"
-          :style="{ height: drawerHandleHeight + 'px' }" @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove"
-          @touchend="onDrawerTouchEnd" @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove"
-          @mouseup="onDrawerTouchEnd">
+        <div class="drawer-handle" @click="onDrawerHandleClick" :style="{ height: drawerHandleHeight + 'px' }"
+          @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd"
+          @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
           <span class="drawer-hint" :style="{ top: drawerHandleHeight <= 20 ? '6px' : '8px' }"></span>
           <span v-show="drawerTranslateY < drawerPanelHeight - 1">{{ activeDrawerCameraName }} · {{ drawerStatusText
-            }}</span>
+          }}</span>
         </div>
-        <div class="drawer-panel" :style="{ height: drawerPanelFullHeight + 'px' }" @click="closeDrawer" @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd" @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
-            <div class="device-actions">
-              <button class="action-btn" @click="openAddAccessoryByDrawer">➕ 添加辅助设备</button>
-            </div>
-            <div class="accessories-grid">
-              <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id">
+        <div class="drawer-panel" :style="{ height: drawerPanelFullHeight + 'px' }" @click.self="closeDrawer"
+          @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd"
+          @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
+          <div class="device-actions">
+            <button class="action-btn" @click="openAddAccessoryByDrawer">➕ 添加辅助设备</button>
+          </div>
+          <div class="accessories-grid">
+            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id">
               <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
               </div>
               <div class="accessory-name">{{ acc.name }}<span class="device-type">{{ acc.type }}</span></div>
@@ -192,10 +197,44 @@
         </div>
       </div>
     </div>
+
+    <div class="aux-modal-mask" v-if="showAddAuxModal" @click="closeAddAuxModal">
+      <div class="aux-modal-content" @click.stop>
+        <div class="aux-modal-header">
+          <h3>添加辅助设备</h3>
+          <span class="aux-modal-close" @click="closeAddAuxModal">×</span>
+        </div>
+        <div class="aux-top-error" v-if="auxErrors.top">{{ auxErrors.top }}</div>
+        <div class="aux-modal-body">
+          <div class="aux-field">
+            <label class="aux-label">学习设备名称</label>
+            <input class="aux-input" type="text" :value="auxForm.devName" disabled>
+          </div>
+          <div class="aux-field">
+            <label class="aux-label">设备ID</label>
+            <input class="aux-input" type="text" :value="auxForm.devId" disabled>
+            <div class="aux-error" v-if="auxErrors.devId">{{ auxErrors.devId }}</div>
+          </div>
+          <div class="aux-field">
+            <label class="aux-label">辅助设备标识码</label>
+            <input class="aux-input" type="text" v-model.trim="auxForm.auxiliaryDeviceId" placeholder="请输入辅助设备的唯一标识码">
+            <div class="aux-error" v-if="auxErrors.auxiliaryDeviceId">{{ auxErrors.auxiliaryDeviceId }}</div>
+          </div>
+        </div>
+        <div class="aux-modal-footer">
+          <button class="aux-btn aux-cancel" @click="closeAddAuxModal" :disabled="auxLoading">取消</button>
+          <button class="aux-btn aux-confirm" @click="submitAuxiliary" :disabled="auxLoading">确定</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import request from '@/utils/request.js';
+import axios from 'axios';
+import { message } from 'ant-design-vue';
+
 export default {
   name: 'MonitorHome',
   data() {
@@ -212,30 +251,7 @@ export default {
         { id: 3, name: '番茄模式', icon: '⏱️' },
         { id: 4, name: '专注模式', icon: '🎧' },
       ],
-      cameras: [
-        {
-          id: 1,
-          name: '智能摄像头·书桌',
-          type: '坐姿识别+人脸检测',
-          online: true,
-          preview: 'https://picsum.photos/200/150?random=201',
-          accessories: [
-            { id: 'a-101', name: '专注灯', type: 'RGB护眼灯', category: 'assist', online: true, powerOn: true, preview: 'https://picsum.photos/200/150?random=101' },
-            { id: 'a-102', name: '噪音传感器', type: 'dB环境监测', category: 'env', online: true, powerOn: false, preview: 'https://picsum.photos/200/150?random=102' },
-            { id: 'a-104', name: '番茄钟', type: '时间管理', category: 'assist', online: true, powerOn: false, preview: 'https://picsum.photos/200/150?random=104' }
-          ]
-        },
-        {
-          id: 2,
-          name: '智能摄像头·门口',
-          type: '人脸检测',
-          online: true,
-          preview: 'https://picsum.photos/200/150?random=202',
-          accessories: [
-            { id: 'b-101', name: '专注灯', type: 'RGB护眼灯', category: 'assist', online: false, powerOn: false, preview: 'https://picsum.photos/200/150?random=111' }
-          ]
-        }
-      ],
+      cameras: [],
       // 新增添加设备相关数据
       showAddDeviceModal: false,
       deviceCode: '',
@@ -255,6 +271,19 @@ export default {
       drawerPanelHeight: 300,
       drawerPanelFullHeight: 420,
       navHeight: 60,
+      showStatusPanel: false,
+      showAddAuxModal: false,
+      auxForm: {
+        devId: '',
+        devName: '',
+        auxiliaryDeviceId: ''
+      },
+      auxErrors: {
+        top: '',
+        devId: '',
+        auxiliaryDeviceId: ''
+      },
+      auxLoading: false,
     };
   },
   computed: {
@@ -294,7 +323,7 @@ export default {
       return this.drawerTranslateY < this.drawerPanelHeight - 1 ? this.navHeight : (this.navHeight - this.drawerHandleHeight);
     }
   },
-  mounted() {
+  async mounted() {
     this.updateTime();
     setInterval(() => this.updateTime(), 60000);
     const base = Math.round(window.innerHeight * 0.45);
@@ -316,6 +345,47 @@ export default {
       this.navHeight = el ? el.offsetHeight : 60;
     };
     window.addEventListener('resize', this.onResizeRef);
+
+    try {
+      const data = await request.get('http://localhost:8084/device/details');
+      if (data.code === 1) {
+        this.cameras = await Promise.all(data.data.map(async (device) => {
+          let online = true; // Default
+          if (device.deviceNameOrgin && device.deviceNameOrgin !== 'Null') {
+            try {
+              const res = await axios.get('https://apis.bemfa.com/va/online', {
+                params: {
+                  uid: '6fc94297b1a4771e713523fd16d19702',
+                  topic: device.deviceNameOrgin,
+                  type: 1
+                }
+              });
+              if (res.data.code === 0) {
+                online = res.data.data;
+              }
+            } catch (err) {
+              console.error(`Failed to fetch online status for ${device.deviceNameOrgin}:`, err);
+            }
+          }
+          return {
+            id: device.id,
+            devId: device.devId,
+            name: device.deviceNameUser,
+            type: device.deviceNameOrgin,
+            online,
+            preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
+            loading: false,
+            accessories: [] // Assuming no accessories; adjust if needed
+          };
+        }));
+        this.updateCounts();
+      }
+    } catch (error) {
+      console.error('Failed to fetch devices:', error);
+    }
+    this.refreshInterval = setInterval(() => {
+      this.cameras.forEach(cam => this.refreshOnlineStatus(cam, false));
+    }, 30000);
   },
   beforeUnmount() {
     if (this.onResizeRef) window.removeEventListener('resize', this.onResizeRef);
@@ -326,13 +396,17 @@ export default {
       this.currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
     refreshDevices() {
-      this.cameras.forEach(cam => {
-        cam.online = Math.random() > 0.2;
-        cam.accessories.forEach(acc => {
-          acc.online = Math.random() > 0.3;
-        });
-      });
-      this.updateCounts();
+      this.recountFromList();
+    },
+    recountFromList() {
+      const list = this.filteredCameras;
+      const total = list.length;
+      const online = list.filter(c => c.online).length;
+      this.totalDevices = total;
+      this.onlineDevices = online;
+    },
+    toggleStatus() {
+      this.showStatusPanel = !this.showStatusPanel;
     },
     handleSceneClick(scene) {
       alert(`执行学习场景：${scene.name}`);
@@ -361,16 +435,123 @@ export default {
       this.showAddDeviceModal = true;
       this.deviceCode = '';
     },
-    openAccessoryDrawer(cam) {
+    async openAccessoryDrawer(cam) {
       this.activeDrawerCameraId = cam.id;
       const partialGap = this.drawerPanelFullHeight - this.drawerPanelHeight;
       this.drawerTranslateY = partialGap;
       this.drawerOpen = true;
+
+      try {
+        const data = await request.get('http://localhost:8084/device/auxiliary/list', {
+          params: { devId: cam.devId }
+        });
+        if (data.code === 1) {
+          cam.accessories = data.data.map(aux => ({
+            id: aux.id,
+            name: aux.assistDeviceName,
+            type: '辅助设备',
+            category: 'assist',
+            online: aux.state === 'true',
+            powerOn: aux.state === 'true',
+            preview: aux.imgUrl
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch auxiliary devices:', error);
+      }
     },
     openAddAccessoryByDrawer() {
       const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId) || this.cameras[0];
       if (!cam) return;
-      this.openAddAccessory(cam);
+      this.openAddAuxiliaryModal(cam);
+    },
+    openAddAuxiliaryModal(cam) {
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      this.auxForm.devId = cam.devId || '';
+      this.auxForm.devName = cam.name || '';
+      this.auxForm.auxiliaryDeviceId = '';
+      this.showAddAuxModal = true;
+    },
+    closeAddAuxModal() {
+      if (this.auxLoading) return;
+      this.showAddAuxModal = false;
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      this.auxForm.auxiliaryDeviceId = '';
+    },
+    validateAuxiliaryForm() {
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      let ok = true;
+      if (!this.auxForm.devId) {
+        this.auxErrors.devId = '设备不存在';
+        ok = false;
+      }
+      const reg = /^[A-Za-z0-9_]{6,32}$/;
+      if (!this.auxForm.auxiliaryDeviceId) {
+        this.auxErrors.auxiliaryDeviceId = '请输入辅助设备标识码';
+        ok = false;
+      } else if (!reg.test(this.auxForm.auxiliaryDeviceId)) {
+        this.auxErrors.auxiliaryDeviceId = '辅助设备标识码格式不正确';
+        ok = false;
+      }
+      return ok;
+    },
+    async submitAuxiliary() {
+      if (this.auxLoading) return;
+      if (!this.validateAuxiliaryForm()) return;
+      this.auxLoading = true;
+      try {
+        const res = await request.post('http://localhost:8084/device/auxiliary/add', null, {
+          params: {
+            devId: this.auxForm.devId,
+            auxiliaryDeviceId: this.auxForm.auxiliaryDeviceId
+          },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          await this.refreshActiveDrawerAccessories();
+          this.showAddAuxModal = false;
+          this.closeDrawer();
+          message.success('添加成功');
+        } else if (res && res.code === 0) {
+          const msg = res.msg || '';
+          if (msg === '设备不存在') {
+            this.auxErrors.devId = '设备不存在';
+          } else if (msg === '无权操作该设备') {
+            this.auxErrors.top = '无权操作该设备';
+          } else if (msg === '辅助设备不存在') {
+            this.auxErrors.auxiliaryDeviceId = '辅助设备不存在';
+          } else if (msg === '绑定失败') {
+            this.auxErrors.top = '绑定失败，请重试';
+          } else {
+            this.auxErrors.top = msg || '绑定失败，请重试';
+          }
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      } finally {
+        this.auxLoading = false;
+      }
+    },
+    async refreshActiveDrawerAccessories() {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId) || this.cameras[0];
+      if (!cam) return;
+      try {
+        const data = await request.get('http://localhost:8084/device/auxiliary/list', {
+          params: { devId: cam.devId }
+        });
+        if (data.code === 1) {
+          cam.accessories = data.data.map(aux => ({
+            id: aux.id,
+            name: aux.assistDeviceName,
+            type: '辅助设备',
+            category: 'assist',
+            online: aux.state === 'true',
+            powerOn: aux.state === 'true',
+            preview: aux.imgUrl
+          }));
+          this.updateCounts();
+        }
+      } catch (err) { }
     },
     enterEditMode() {
       alert('进入设备编辑模式（可删除/排序设备）');
@@ -434,6 +615,9 @@ export default {
       alert(`${acc.name}${state ? '已打开' : '已关闭'}`);
     },
     onDrawerTouchStart(e) {
+      const t = e.target;
+      const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+      if (['button', 'input', 'select', 'a', 'textarea'].includes(tag) || (t && t.closest && t.closest('.device-actions'))) return;
       e.preventDefault();
       this.dragging = true;
       this.gestureStartY = (e.touches ? e.touches[0].clientY : e.clientY);
@@ -541,6 +725,39 @@ export default {
       this.totalDevices = cams + accs;
       this.onlineDevices = onlineCams + onlineAccs;
     },
+    async refreshOnlineStatus(cam, showLoading = true) {
+      if (!cam.type || cam.type === 'Null') return;
+      if (showLoading && cam.loading) return;
+      if (showLoading) cam.loading = true;
+      const start = (performance && performance.now) ? performance.now() : Date.now();
+      try {
+        const res = await axios.get('https://apis.bemfa.com/va/online', {
+          params: {
+            uid: '6fc94297b1a4771e713523fd16d19702',
+            topic: cam.type,
+            type: 1
+          }
+        });
+        if (res.data.code === 0) {
+          cam.online = res.data.data;
+        }
+      } catch (err) {
+      }
+      const now = (performance && performance.now) ? performance.now() : Date.now();
+      const elapsed = now - start;
+      if (showLoading) {
+        const minLoading = 2000;
+        if (elapsed < minLoading) {
+          await new Promise(r => setTimeout(r, minLoading - elapsed));
+        }
+        cam.loading = false;
+      }
+      this.updateCounts();
+    },
+  },
+  destroyed() {
+    clearInterval(this.refreshInterval);
+    window.removeEventListener('resize', this.onResizeRef);
   }
 };
 </script>
@@ -595,6 +812,38 @@ export default {
   font-weight: 600;
   color: #fff;
   margin: 0;
+}
+
+.header-toggle {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 32px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .device-status {
@@ -793,6 +1042,53 @@ export default {
   color: #8c8c8c;
 }
 
+.device-status-badge.loading {
+  background: #ffc107;
+  animation: pulse 2.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 2.5s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.spinner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.spinner-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .device-name {
   font-size: 16px;
   font-weight: 500;
@@ -804,7 +1100,7 @@ export default {
 .device-type {
   font-size: 12px;
   color: #666;
-  margin-left: 4px;
+  margin-top: 4px;
   font-weight: normal;
 }
 
@@ -1189,5 +1485,113 @@ export default {
 
 .confirm-btn:not(:disabled):hover {
   background: #1a73e8;
+}
+
+.aux-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.aux-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 500px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.aux-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.aux-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.aux-modal-close {
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.aux-top-error {
+  color: #ff4d4f;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.aux-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aux-field {}
+
+.aux-label {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.aux-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.aux-input:focus {
+  border-color: #2d8cf0;
+}
+
+.aux-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.aux-modal-footer {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.aux-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.aux-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.aux-confirm {
+  background: #2d8cf0;
+  color: #fff;
 }
 </style>
