@@ -44,11 +44,13 @@
         </div>
       </div>
       <div class="devices-list">
-        <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id">
+        <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id" @touchstart="onDeviceTouchStart($event, cam)" @touchmove="onDeviceTouchMove($event, cam)" @touchend="onDeviceTouchEnd" @mousedown="onDeviceMouseDown($event, cam)" @mousemove="onDeviceMouseMove" @mouseup="onDeviceMouseUp">
           <button @click="refreshOnlineStatus(cam)" class="device-status-badge"
             :class="[cam.online ? 'online' : 'offline', { loading: cam.loading }]">
             <span v-if="!cam.loading">{{ cam.online ? '在线' : '离线' }}</span>
-            <span v-else class="spinner-icon"><SyncOutlined spin /></span>
+            <span v-else class="spinner-icon">
+              <SyncOutlined spin />
+            </span>
           </button>
           <div class="device-name">{{ cam.name }}</div>
           <div class="device-type">{{ cam.type }}</div>
@@ -78,7 +80,7 @@
           </div>
         </div>
       </div>
-      <button class="edit-btn" @click="enterEditMode">编辑设备</button>
+      
     </div>
 
     <!-- 工具功能区 -->
@@ -126,7 +128,13 @@
           @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
           <div class="device-actions">
             <button class="action-btn" @click="openAddAccessoryByDrawer">➕ 添加辅助设备</button>
+            <button class="action-btn" :class="{ primary: assistEditMode }" @click="toggleEditAccessories">✏️
+              编辑辅助设备</button>
           </div>
+          <div v-if="assistEditMode" class="edit-tip"><span class="tip-icon">✏️</span><span>编辑模式已开启</span><button
+              class="tip-exit" @click="toggleEditAccessories">退出</button></div>
+          <div v-if="!activeDrawerAccessories || activeDrawerAccessories.length === 0" class="empty-state">
+            暂无辅助设备，点击上方“添加辅助设备”</div>
           <div class="accessories-grid">
             <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id">
               <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
@@ -138,6 +146,10 @@
               <div class="device-actions">
                 <button class="action-btn" @click="toggleAccessoryPower(acc, true)">打开</button>
                 <button class="action-btn" @click="toggleAccessoryPower(acc, false)">关闭</button>
+                <transition>
+                  <button v-if="assistEditMode" class="action-btn danger" @click="deleteAccessory(acc)"
+                    :disabled="acc.deleting">{{ acc.deleting ? '删除中...' : '删除' }}</button>
+                </transition>
               </div>
             </div>
           </div>
@@ -227,13 +239,35 @@
         </div>
       </div>
     </div>
+    <div class="aux-modal-mask" v-if="showDeleteModal" @click="closeDeleteModal">
+      <div class="aux-modal-content" @click.stop>
+        <div class="aux-modal-header">
+          <h3>确认删除设备</h3>
+          <span class="aux-modal-close" @click="closeDeleteModal">×</span>
+        </div>
+        <div class="aux-modal-body">
+          <div class="aux-field">
+            <label class="aux-label">用户名</label>
+            <input class="aux-input" type="text" v-model.trim="deleteForm.username" placeholder="请输入用户名">
+          </div>
+          <div class="aux-field">
+            <label class="aux-label">密码</label>
+            <input class="aux-input" type="password" v-model.trim="deleteForm.password" placeholder="请输入密码">
+          </div>
+        </div>
+        <div class="aux-modal-footer">
+          <button class="aux-btn aux-cancel" @click="closeDeleteModal" :disabled="deleteLoading">取消</button>
+          <button class="aux-btn aux-confirm" @click="submitDelete" :disabled="deleteLoading || !canSubmitDelete">确定</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import request from '@/utils/request.js';
 import axios from 'axios';
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 
 export default {
   name: 'MonitorHome',
@@ -273,6 +307,7 @@ export default {
       navHeight: 60,
       showStatusPanel: false,
       showAddAuxModal: false,
+      assistEditMode: false,
       auxForm: {
         devId: '',
         devName: '',
@@ -284,6 +319,16 @@ export default {
         auxiliaryDeviceId: ''
       },
       auxLoading: false,
+      showDeleteModal: false,
+      deleteTargetCam: null,
+      deleteForm: { username: '', password: '' },
+      deleteLoading: false,
+      longPressTimer: null,
+      longPressDuration: 800,
+      pressingCamId: null,
+      touchStartX: 0,
+      touchStartY: 0,
+      mouseDown: false,
     };
   },
   computed: {
@@ -304,6 +349,9 @@ export default {
       const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId);
       return cam ? cam.accessories : [];
     },
+    canSubmitDelete() {
+      return !!(this.deleteForm.username && this.deleteForm.password && this.deleteTargetCam);
+    },
     drawerStatusText() {
       const accs = this.cameras.find(c => c.id === this.activeDrawerCameraId)?.accessories || [];
       const anyOn = accs.some(a => a.powerOn);
@@ -321,6 +369,11 @@ export default {
     },
     drawerBottomOffset() {
       return this.drawerTranslateY < this.drawerPanelHeight - 1 ? this.navHeight : (this.navHeight - this.drawerHandleHeight);
+    }
+  },
+  watch: {
+    drawerOpen(val) {
+      if (!val) this.assistEditMode = false;
     }
   },
   async mounted() {
@@ -453,7 +506,8 @@ export default {
             category: 'assist',
             online: aux.state === 'true',
             powerOn: aux.state === 'true',
-            preview: aux.imgUrl
+            preview: aux.imgUrl,
+            auxiliaryDeviceId: aux.auxiliaryDeviceId || aux.id || aux.assistDeviceName
           }));
         }
       } catch (error) {
@@ -464,6 +518,42 @@ export default {
       const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId) || this.cameras[0];
       if (!cam) return;
       this.openAddAuxiliaryModal(cam);
+    },
+    toggleEditAccessories() {
+      this.assistEditMode = !this.assistEditMode;
+    },
+    deleteAccessory(acc) {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId);
+      if (!cam) return;
+      Modal.confirm({
+        centered: true,
+        zIndex: 10001,
+        title: '确认删除该辅助设备吗？',
+        content: `设备：${acc.name}`,
+        okText: '确定',
+        cancelText: '取消',
+        onOk: async () => {
+          acc.deleting = true;
+          try {
+            const res = await request.post('http://localhost:8084/device/auxiliary/init', null, {
+              params: { auxiliaryDeviceId: acc.auxiliaryDeviceId || acc.id || acc.name },
+              timeout: 10000
+            });
+            if (res && res.code === 1) {
+              cam.accessories = cam.accessories.filter(a => a.id !== acc.id);
+              this.updateCounts();
+              message.success('删除成功');
+            } else {
+              const msg = (res && res.msg) ? res.msg : '删除失败，请重试';
+              message.error(msg);
+            }
+          } catch (e) {
+            message.error('网络异常，请检查连接');
+          } finally {
+            acc.deleting = false;
+          }
+        }
+      });
     },
     openAddAuxiliaryModal(cam) {
       this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
@@ -510,7 +600,6 @@ export default {
         if (res && res.code === 1) {
           await this.refreshActiveDrawerAccessories();
           this.showAddAuxModal = false;
-          this.closeDrawer();
           message.success('添加成功');
         } else if (res && res.code === 0) {
           const msg = res.msg || '';
@@ -547,14 +636,127 @@ export default {
             category: 'assist',
             online: aux.state === 'true',
             powerOn: aux.state === 'true',
-            preview: aux.imgUrl
+            preview: aux.imgUrl,
+            auxiliaryDeviceId: aux.auxiliaryDeviceId || aux.id || aux.assistDeviceName
           }));
           this.updateCounts();
         }
       } catch (err) { }
     },
-    enterEditMode() {
-      alert('进入设备编辑模式（可删除/排序设备）');
+    onDeviceTouchStart(e, cam) {
+      this.cancelPressTimer();
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      this.touchStartX = t.clientX;
+      this.touchStartY = t.clientY;
+      this.pressingCamId = cam.id;
+      this.longPressTimer = setTimeout(() => {
+        if (this.pressingCamId === cam.id) {
+          this.confirmDelete(cam);
+        }
+      }, this.longPressDuration);
+    },
+    onDeviceTouchMove(e, cam) {
+      if (!this.pressingCamId) return;
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      const dx = t.clientX - this.touchStartX;
+      const dy = t.clientY - this.touchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelPressTimer();
+      }
+    },
+    onDeviceTouchEnd() {
+      this.cancelPressTimer();
+      this.pressingCamId = null;
+    },
+    onDeviceMouseDown(e, cam) {
+      this.mouseDown = true;
+      this.pressingCamId = cam.id;
+      this.touchStartX = e.clientX;
+      this.touchStartY = e.clientY;
+      this.cancelPressTimer();
+      this.longPressTimer = setTimeout(() => {
+        if (this.mouseDown && this.pressingCamId === cam.id) {
+          this.confirmDelete(cam);
+        }
+      }, this.longPressDuration);
+    },
+    onDeviceMouseMove(e) {
+      if (!this.mouseDown || !this.pressingCamId) return;
+      const dx = e.clientX - this.touchStartX;
+      const dy = e.clientY - this.touchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelPressTimer();
+      }
+    },
+    onDeviceMouseUp() {
+      this.mouseDown = false;
+      this.cancelPressTimer();
+      this.pressingCamId = null;
+    },
+    cancelPressTimer() {
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+    },
+    confirmDelete(cam) {
+      Modal.confirm({
+        centered: true,
+        title: '确认删除该设备吗？',
+        content: `设备：${cam.name}`,
+        okText: '继续',
+        cancelText: '取消',
+        onOk: () => {
+          this.deleteTargetCam = cam;
+          this.deleteForm = { username: '', password: '' };
+          this.showDeleteModal = true;
+        }
+      });
+    },
+    async submitDelete() {
+      if (!this.canSubmitDelete || this.deleteLoading) return;
+      this.deleteLoading = true;
+      const cam = this.deleteTargetCam;
+      try {
+        const accs = Array.isArray(cam.accessories) ? cam.accessories : [];
+        for (const acc of accs) {
+          const aid = acc.auxiliaryDeviceId || acc.id || acc.name;
+          try {
+            await request.post('http://localhost:8084/device/auxiliary/init', null, {
+              params: { auxiliaryDeviceId: aid },
+              timeout: 10000
+            });
+          } catch (e) {}
+        }
+        const res = await request.post('http://localhost:8084/device/init', {
+          username: this.deleteForm.username,
+          password: this.deleteForm.password
+        }, {
+          params: { devId: cam.devId },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          this.cameras = this.cameras.filter(c => c.id !== cam.id);
+          this.updateCounts();
+          message.success('删除成功');
+          this.showDeleteModal = false;
+          this.deleteTargetCam = null;
+          this.deleteForm = { username: '', password: '' };
+        } else {
+          const msg = (res && res.msg) ? res.msg : '删除失败，请重试';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      } finally {
+        this.deleteLoading = false;
+      }
+    },
+    closeDeleteModal() {
+      if (this.deleteLoading) return;
+      this.showDeleteModal = false;
+      this.deleteTargetCam = null;
+      this.deleteForm = { username: '', password: '' };
     },
     openCloudStorage() {
       alert('打开学习记录');
@@ -711,6 +913,7 @@ export default {
     closeDrawer() {
       this.drawerOpen = false;
       this.drawerTranslateY = this.drawerPanelFullHeight;
+      this.assistEditMode = false;
     },
     onBottomNavClick() {
       if (this.drawerTranslateY < this.drawerPanelHeight) {
@@ -1001,8 +1204,8 @@ export default {
 
 .devices-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
   margin-bottom: 20px;
 }
 
@@ -1089,6 +1292,28 @@ export default {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .device-name {
   font-size: 16px;
   font-weight: 500;
@@ -1133,20 +1358,26 @@ export default {
 
 .accessories-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .accessory-card {
   background: #f7f9fc;
   border-radius: 8px;
   padding: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .accessory-status {
   font-size: 12px;
   margin-bottom: 4px;
+}
+
+.accessory-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .accessory-preview {
@@ -1181,11 +1412,79 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .action-btn:active {
   background: #e8f4f8;
   color: #2d8cf0;
+}
+
+.action-btn:hover {
+  background: #eef6ff;
+}
+
+.action-btn.primary {
+  background: #2d8cf0;
+  color: #fff;
+}
+
+.action-btn.primary:hover {
+  background: #1a73e8;
+}
+
+.action-btn:focus-visible {
+  outline: 2px solid #2d8cf0;
+  outline-offset: 2px;
+}
+
+.action-btn.danger {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.action-btn.danger[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.edit-tip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eef6ff;
+  color: #1a73e8;
+  border: 1px solid #d0e4ff;
+  border-radius: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.tip-icon {
+  font-size: 14px;
+}
+
+.tip-exit {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #2d8cf0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tip-exit:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  margin-top: 12px;
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  background: #fafafa;
+  border-radius: 8px;
 }
 
 .edit-btn {
@@ -1219,8 +1518,8 @@ export default {
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
 }
 
 .tool-card {
@@ -1339,13 +1638,13 @@ export default {
   width: 36px;
   height: 4px;
   border-radius: 2px;
-  background: #ddd;
+  background: #dbe8ff;
   position: absolute;
   top: 8px;
 }
 
 .drawer-panel {
-  background: #fff;
+  background: linear-gradient(#fff, #fafafa);
   height: 300px;
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
   border-top-left-radius: 0;
@@ -1364,7 +1663,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0);
+  background: rgba(0, 0, 0, 0.18);
   z-index: 9998;
 }
 
@@ -1498,6 +1797,7 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  animation: fadeIn 0.2s ease;
 }
 
 .aux-modal-content {
@@ -1506,6 +1806,7 @@ export default {
   width: 500px;
   padding: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.22s ease;
 }
 
 .aux-modal-header {
@@ -1595,3 +1896,20 @@ export default {
   color: #fff;
 }
 </style>
+/* 使用 Vue 默认过渡类名 */
+.v-enter-active,
+.v-leave-active {
+transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.v-enter-from,
+.v-leave-to {
+opacity: 0;
+transform: translateY(10px) scale(0.98);
+}
+
+.v-enter-to,
+.v-leave-from {
+opacity: 1;
+transform: translateY(0) scale(1);
+}
