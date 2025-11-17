@@ -136,7 +136,7 @@
           <div v-if="!activeDrawerAccessories || activeDrawerAccessories.length === 0" class="empty-state">
             暂无辅助设备，点击上方“添加辅助设备”</div>
           <div class="accessories-grid">
-            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id">
+            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id" @touchstart="onAccTouchStart($event, acc)" @touchmove="onAccTouchMove" @touchend="onAccTouchEnd" @mousedown="onAccMouseDown($event, acc)" @mousemove="onAccMouseMove" @mouseup="onAccMouseUp">
               <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
               </div>
               <div class="accessory-name">{{ acc.name }}<span class="device-type">{{ acc.type }}</span></div>
@@ -184,26 +184,20 @@
           <span class="modal-close" @click="showAddDeviceModal = false">×</span>
         </div>
         <div class="modal-body">
-          <p class="modal-tip">请输入学习设备的16位编码</p>
-          <input type="text" v-model="deviceCode" placeholder="例如：SB_8A3F92B7C1D4E5" maxlength="16"
+          <p class="modal-tip">请输入学习设备编码（BE+生产日期）</p>
+          <input type="text" v-model="deviceCode" placeholder="例如：BE20251117"
             @input="formatDeviceCode" class="device-code-input">
-          <p class="modal-note">设备编码通常以SB_开头，共16位字符（字母/数字/下划线）</p>
+          <p class="modal-note">设备编码为BE+生产日期，例如：BE20251117</p>
           <div class="modal-row">
-            <select v-model="selectedCameraId" class="device-code-input">
-              <option v-for="c in cameras" :value="c.id">{{ c.name }}</option>
-            </select>
+            <input type="text" v-model.trim="bindUsername" placeholder="请输入用户名" class="device-code-input">
           </div>
           <div class="modal-row">
-            <select v-model="selectedDeviceType" class="device-code-input">
-              <option value="RGB护眼灯">RGB护眼灯</option>
-              <option value="dB环境监测">dB环境监测</option>
-              <option value="时间管理">时间管理</option>
-            </select>
+            <input type="password" v-model.trim="bindPassword" placeholder="请输入密码" class="device-code-input">
           </div>
         </div>
         <div class="modal-footer">
           <button class="cancel-btn" @click="showAddDeviceModal = false">取消</button>
-          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!isDeviceCodeValid">
+          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!canBind">
             确认绑定
           </button>
         </div>
@@ -218,10 +212,6 @@
         </div>
         <div class="aux-top-error" v-if="auxErrors.top">{{ auxErrors.top }}</div>
         <div class="aux-modal-body">
-          <div class="aux-field">
-            <label class="aux-label">学习设备名称</label>
-            <input class="aux-input" type="text" :value="auxForm.devName" disabled>
-          </div>
           <div class="aux-field">
             <label class="aux-label">设备ID</label>
             <input class="aux-input" type="text" :value="auxForm.devId" disabled>
@@ -289,6 +279,8 @@ export default {
       // 新增添加设备相关数据
       showAddDeviceModal: false,
       deviceCode: '',
+      bindUsername: '',
+      bindPassword: '',
       searchQuery: '',
       selectedCategory: 'all',
       selectedCameraId: null,
@@ -329,12 +321,20 @@ export default {
       touchStartX: 0,
       touchStartY: 0,
       mouseDown: false,
+      accLongPressTimer: null,
+      pressingAccId: null,
+      accTouchStartX: 0,
+      accTouchStartY: 0,
+      accMouseDown: false,
     };
   },
   computed: {
     isDeviceCodeValid() {
-      const reg = /^[A-Za-z0-9_]{16}$/;
+      const reg = /^BE\d{8}$/;
       return reg.test(this.deviceCode);
+    },
+    canBind() {
+      return this.isDeviceCodeValid && !!this.bindUsername && !!this.bindPassword;
     },
     filteredCameras() {
       const q = this.searchQuery.trim();
@@ -699,6 +699,62 @@ export default {
         this.longPressTimer = null;
       }
     },
+    onAccTouchStart(e, acc) {
+      this.cancelAccPressTimer();
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      this.accTouchStartX = t.clientX;
+      this.accTouchStartY = t.clientY;
+      this.pressingAccId = acc.id;
+      this.accLongPressTimer = setTimeout(() => {
+        if (this.pressingAccId === acc.id) {
+          this.deleteAccessory(acc);
+        }
+      }, this.longPressDuration);
+    },
+    onAccTouchMove(e) {
+      if (!this.pressingAccId) return;
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      const dx = t.clientX - this.accTouchStartX;
+      const dy = t.clientY - this.accTouchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelAccPressTimer();
+      }
+    },
+    onAccTouchEnd() {
+      this.cancelAccPressTimer();
+      this.pressingAccId = null;
+    },
+    onAccMouseDown(e, acc) {
+      this.accMouseDown = true;
+      this.pressingAccId = acc.id;
+      this.accTouchStartX = e.clientX;
+      this.accTouchStartY = e.clientY;
+      this.cancelAccPressTimer();
+      this.accLongPressTimer = setTimeout(() => {
+        if (this.accMouseDown && this.pressingAccId === acc.id) {
+          this.deleteAccessory(acc);
+        }
+      }, this.longPressDuration);
+    },
+    onAccMouseMove(e) {
+      if (!this.accMouseDown || !this.pressingAccId) return;
+      const dx = e.clientX - this.accTouchStartX;
+      const dy = e.clientY - this.accTouchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelAccPressTimer();
+      }
+    },
+    onAccMouseUp() {
+      this.accMouseDown = false;
+      this.cancelAccPressTimer();
+      this.pressingAccId = null;
+    },
+    cancelAccPressTimer() {
+      if (this.accLongPressTimer) {
+        clearTimeout(this.accLongPressTimer);
+        this.accLongPressTimer = null;
+      }
+    },
     confirmDelete(cam) {
       Modal.confirm({
         centered: true,
@@ -784,29 +840,88 @@ export default {
       this.deviceCode = this.deviceCode.toUpperCase();
     },
     // 新增：通过设备编码绑定设备
-    bindDeviceByCode() {
-      const deviceTypes = ['RGB护眼灯', 'dB环境监测', '时间管理'];
-      const typeToCat = { 'RGB护眼灯': 'assist', 'dB环境监测': 'env', '时间管理': 'assist' };
-      const type = this.selectedDeviceType || 'RGB护眼灯';
-      const cat = typeToCat[type] || 'assist';
-      const cam = this.cameras.find(c => c.id === this.selectedCameraId) || this.cameras[0];
-      if (!cam) {
-        alert('请先添加摄像头');
-        return;
+    async bindDeviceByCode() {
+      if (!this.canBind) return;
+      try {
+        const res = await request.post('http://localhost:8084/device/bind', {
+          username: this.bindUsername,
+          password: this.bindPassword
+        }, {
+          params: { devId: this.deviceCode },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          message.success('绑定成功');
+          this.showAddDeviceModal = false;
+          this.bindUsername = '';
+          this.bindPassword = '';
+          this.deviceCode = '';
+          try {
+            const data = await request.get('http://localhost:8084/device/details');
+            if (data.code === 1) {
+              this.cameras = await Promise.all(data.data.map(async (device) => {
+                let online = true;
+                if (device.deviceNameOrgin && device.deviceNameOrgin !== 'Null') {
+                  try {
+                    const o = await axios.get('https://apis.bemfa.com/va/online', {
+                      params: {
+                        uid: '6fc94297b1a4771e713523fd16d19702',
+                        topic: device.deviceNameOrgin,
+                        type: 1
+                      }
+                    });
+                    if (o.data.code === 0) {
+                      online = o.data.data;
+                    }
+                  } catch (err) {}
+                }
+                return {
+                  id: device.id,
+                  devId: device.devId,
+                  name: device.deviceNameUser,
+                  type: device.deviceNameOrgin,
+                  online,
+                  preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
+                  loading: false,
+                  accessories: []
+                };
+              }));
+              this.updateCounts();
+            } else {
+              const fallback = {
+                id: Date.now(),
+                devId: this.deviceCode,
+                name: this.deviceCode,
+                type: '新设备',
+                online: false,
+                preview: `https://picsum.photos/400/300?random=${Date.now()}`,
+                loading: false,
+                accessories: []
+              };
+              this.cameras.push(fallback);
+              this.updateCounts();
+            }
+          } catch (e) {
+            const fallback = {
+              id: Date.now(),
+              devId: this.deviceCode,
+              name: this.deviceCode,
+              type: '新设备',
+              online: false,
+              preview: `https://picsum.photos/400/300?random=${Date.now()}`,
+              loading: false,
+              accessories: []
+            };
+            this.cameras.push(fallback);
+            this.updateCounts();
+          }
+        } else {
+          const msg = (res && res.msg) ? res.msg : '绑定失败，请重试';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
       }
-      const newAcc = {
-        id: `${cam.id}-${Date.now()}`,
-        name: `新设备(${this.deviceCode.slice(0, 6)})`,
-        type,
-        category: cat,
-        online: false,
-        powerOn: false,
-        preview: `https://picsum.photos/200/150?random=${Date.now()}`
-      };
-      cam.accessories.push(newAcc);
-      this.updateCounts();
-      this.showAddDeviceModal = false;
-      alert(`学习设备绑定成功！\n目标摄像头：${cam.name}\n设备类型：${type}`);
     },
     toggleAccessoryPower(acc, state) {
       if (!acc.online) {
