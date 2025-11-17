@@ -217,7 +217,8 @@ const enterFocus = (item) => {
       phone: item.phoneTime,
       studyRatio: item.studyRatio,
       sleepRadio: item.sleepRadio,
-      attentionRadio: item.attentionRadio
+      attentionRadio: item.attentionRadio,
+      startTime: item.startTime
     }
   })
 }

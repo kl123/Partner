@@ -2,7 +2,11 @@
   <div class="app-container">
     <!-- 顶部导航栏 -->
     <div class="top-nav">
-      <button class="nav-btn" :class="{ active: tab === 'day' }" @click="tab = 'day'">日数据</button>
+      <button class="nav-btn back-btn" @click="$router.back()" aria-label="返回">
+        <LeftOutlined />
+      </button>
+      <div class="nav-title">{{ title }}</div>
+      <div class="nav-spacer"></div>
     </div>
 
     <!-- 本周专注度与分类统计 -->
@@ -110,11 +114,17 @@ export default {
   data() {
     return {
       tab: 'day',
+      title: '日数据',
       perc: { sleep: 0, study: 0, focus: 0, walk: 0, phone: 0, idle: 0, distraction: 0 }
     };
   },
   mounted() {
     const q = this.$route.query || {};
+    const fmt = (d) => {
+      const pad = n => (n < 10 ? '0' : '') + n;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    this.title = q.startTime ? `学习数据 · ${fmt(new Date(q.startTime))}` : '学习数据';
     const parseMin = (s) => {
       if (!s) return 0;
       const parts = String(s).split(':');
@@ -190,8 +200,11 @@ export default {
 /* 顶部导航栏 */
 .top-nav {
   display: flex;
-  background-color: #a5d6a7;
+  align-items: center;
+  background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
   padding: 10px 0;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
 }
 
 .nav-btn {
@@ -201,11 +214,33 @@ export default {
   padding: 8px 0;
   font-size: 16px;
   cursor: pointer;
+  color: #fff;
+  font-weight: 500;
+  transition: background .2s ease;
 }
+.back-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  margin-left: 12px;
+  margin-right: 12px;
+  background: rgba(255,255,255,.15);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.back-btn svg { width: 14px; height: 14px; fill: #fff; }
+
+.nav-title { flex: 1; text-align: center; color: #fff; font-weight: 600; font-size: 16px; }
+.nav-spacer { flex: 0 0 auto; width: 36px; height: 32px; margin-right: 12px; }
 
 .nav-btn.active {
   background-color: #81c784;
   border-radius: 4px;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,.15);
 }
 
 /* 本周专注度与分类统计行 */
@@ -442,6 +477,7 @@ export default {
   font-weight: 600;
   color: #333;
 }
+
 .focus-ring {
   width: 120px;
   height: 120px;
