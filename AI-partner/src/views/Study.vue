@@ -13,7 +13,7 @@
           <p style="font-size: small;margin-top: 5px;">
             就剩<strong>20%</strong>了!赶紧来学习吧!
           </p>
-          <button class="btn1">去学习</button>
+          <button class="btn1" @click="intonode(Selectcourse.pathId,Selectcourse.title)">去学习</button>
         </div>
         <div class="right">
           <img src="../assets/青苹果.png" style="height: 80%;width: 80%;"/>
@@ -121,13 +121,15 @@ const getlearningPaths = async () => {
 }
 
 const intonode = (id, title) => {
+  localStorage.setItem('course', JSON.stringify(Selectcourse.value));
   router.push({
     name: "nodes",
     query: {
       pathId: id,
       subject: title
     }
-  });
+  }
+  );
 }
 
  // 加载动画

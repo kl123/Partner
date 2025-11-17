@@ -1,7 +1,7 @@
 <template>
   <div class="head">
-    <component is="LeftOutlined" style=""/>
-    <component is="EllipsisOutlined" style=""/>
+    <component is="LeftOutlined" @click="router.back()"/>
+    <component is="EllipsisOutlined" />
   </div>
   <div class="main">
     <router-view/>
