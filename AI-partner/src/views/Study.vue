@@ -1,78 +1,73 @@
 <template>
-  <div class="learning-progress-page">
-    <!-- 页面标题 -->
-    <a-typography-title :level="2" style="color: #1890ff ;display: flex; flex-direction: row;align-items: center;">
-      📚 学习进度
-      <div id="lottie_demo" class="lottie-animation" style="height: 10vh;width: 30%;"></div>
-    </a-typography-title>
-
-    <!-- 数据总览面板 -->
-    <a-card class="overview-panel" :bordered="false" :hoverable="true">
-      <a-row :gutter="[16, 16]" justify="center">
-        <a-col :xs="24" :sm="12" :md="8" v-for="stat in stats" :key="stat.title">
-          <a-card :title="stat.title" size="small">
-            <a-typography-text :strong="true" style="fontSize: '1.2em'; color: '#1890ff'">
-              {{ stat.value }}
-            </a-typography-text>
-            <template #extra>
-              <a-tag :color="stat.color">{{ stat.tag }}</a-tag>
-            </template>
-          </a-card>
-        </a-col>
-      </a-row>
-    </a-card>
-
-    <!-- 学习路径列表 -->
-    <div class="learning-paths">
-      <a-typography-title :level="3" style="text-align: left; margin-bottom: 16px; color: #333">
-        我的学习路径
-      </a-typography-title>
-
-      <a-row :gutter="[24, 24]">
-        <a-col :xs="24" :sm="12" :md="8" v-for="(path,index) in learningPaths" :key="path.id">
-          <a-card hoverable class="path-card" @click = "intonode(path.pathId,path.title)">
-            <!-- 路径名称 -->
-            <template #title>
-              <a-typography-title :level="4" style="margin: 0">
-                🏁路径{{ index + 1 }}：{{ path.title }}
-              </a-typography-title>
-            </template>
-
-            <!-- 描述 -->
-            <a-typography-paragraph style="color: #666; lineHeight: '1.6'">
-              {{ path.description }}
-            </a-typography-paragraph>
-
-            <!-- 进度与状态 -->
-            <div class="progress-status">
-              <!-- 环形进度条 -->
-              <a-progress
-                type="circle"
-                :percent="path.progress*100"
-                :stroke-color="(path.progress*100) >= 100 ? '#52c41a' : '#1890ff'"
-                :width="80"
-              />
-
-              <!-- 是否完成标签 -->
-              <div class="status-tag">
-                <a-tag
-                  :color="path.completed==1 ? 'success' : path.progress > 0 ? 'processing' : 'default'"
-                  style="fontSize: '0.9em'; padding: '4px 8px'"
-                >
-                  {{ path.completed == 1 ? '已完成' : path.progress > 0 ? '学习中' : '未开始' }}
-                </a-tag>
-              </div>
+  <div class="main">
+    <div class="top-class">
+      <div class="one">
+        <div class="left">
+          <div class="board">
+            <div>
+              <div style="margin-top: 5px;margin-bottom:  5px;margin-left: 10px;">{{Selectcourse.title}}</div>
+              <p style="font-size: smaller;margin-left: 10px;color: red;">风险预测:<a-rate :value="Selectcourse.risk*100/20" /></p>
             </div>
-          </a-card>
-        </a-col>
-      </a-row>
+            <a-progress type="circle" :percent="Selectcourse.progress*100" :size="50" :stroke-width="12" stroke-color="#7bb7d7" style="margin-right: 20px;"/>
+          </div>
+          <p style="font-size: small;margin-top: 5px;">
+            就剩<strong>20%</strong>了!赶紧来学习吧!
+          </p>
+          <button class="btn1">去学习</button>
+        </div>
+        <div class="right">
+          <img src="../assets/青苹果.png" style="height: 80%;width: 80%;"/>
+        </div>
+      </div>
+      <div class="two">
+        <!-- 描述 -->
+        <p>
+          An apple a day, keeps the docter away.
+        </p>
+      </div>
     </div>
+
+    <!-- 学习路径和章节学习区域 -->
+    <div class="study-section">
+      <!-- 学习路径 -->
+      <div class="path-header">
+        <span>学习路径</span>
+        <span style="color: #999; font-size: 12px;">在学路径：{{learningPaths.length}} 个</span>
+      </div>
+    
+      <div class="path-cards">
+        <div class="path-card"  v-for="item in learningPaths" :key="item.pathId" @click="SelectClass(item.pathId)">
+          <div class="stars"><a-rate :value="5" disabled /></div>
+          <div class="subject">{{item.title}}</div>
+          <div class="subject-en">Chemical</div>
+          <img src="../assets/书.png" alt="化学" class="icon" />
+        </div>
+      </div>
+    
+      <!-- 章节学习 -->
+      <div class="chapter-header">
+        <span>章节学习</span>
+      </div>
+      <div class="chapter-list-container">
+        <div class="chapter-item" v-for="item in Nodes" :key="item.id">
+          <div class="chapter-title">{{item.display_name}}</div>
+          <div class="time-info">
+            <span>⏱️ 剩余时间：15h20min</span><br/>
+            <span>📅 计划时间：{{item.day_num}}天</span>
+          </div>
+          <div class="progress-bar">
+            <a-progress stroke-linecap="square" :percent="item.proficiency*100" :size="50" :stroke-width="12" stroke-color="#7bb7d7"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue"
-import { getPlan } from "@/api/Study"
+import { getPlan,getNodes } from "@/api/Study"
 import { useRouter } from 'vue-router'
 import lottieJson from '../assets/animate/vr.json'
 import lottie from 'lottie-web'
@@ -120,6 +115,8 @@ const stats = computed(() => {
 const getlearningPaths = async () => {
   const res = await getPlan();
   learningPaths.value = res.data;
+  Selectcourse.value = learningPaths.value[0]
+  await getNodesbyClass(Selectcourse.value.pathId)
   console.log(res);
 }
 
@@ -151,7 +148,25 @@ const intonode = (id, title) => {
       animationData: lottieJson
     })
  }
-
+ const Selectcourse = ref({});
+ const Nodes = ref([])
+ // 根据 id 选择课程
+  function SelectClass(id) {
+    console.log('选择的 ID:', id);
+    const found = learningPaths.value.find(item => item.pathId === id);
+    if (found) {
+      Selectcourse.value = { ...found }; // 解构赋值确保响应式更新
+      // console.log(Selectcourse.value);
+      getNodesbyClass(id)
+    } else {
+      console.warn(`未找到 id 为 ${id} 的学习路径`);
+    }
+  }
+  async function getNodesbyClass(id) {
+    const response = await getNodes(id)
+    Nodes.value = response.data
+    console.log(Nodes.value);
+  }
 onMounted(() => {
   getlearningPaths();
   initLottie()
@@ -159,66 +174,209 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.learning-progress-page {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-  background-color: #f5f7fa;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+.main {
+  height: 100vh;
+  width: 100vw;
+  background-image: linear-gradient(to bottom, #cbeaff, #ffffff, #cbeaff);
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* ✅ 新增：水平居中 */
+  padding-top: 0;
 }
 
-.overview-panel {
-  margin-bottom: 32px;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.top-class {
+  margin-top: 30px;
+  width: 90%;
+  background-image: linear-gradient(to bottom, #e4f4ff, #ffffff);
+  border-radius: 20px;
+  margin-bottom: 20px; /* 改为底部间距，避免顶部挤压 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* 加点阴影提升立体感 */
+}
+.one{
+  display: flex;
+  flex-direction: row;
+  height: 70%;
+  width: 100%;
+}
+.left {
+  height: 100%;
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* 子元素在水平方向靠右 */
+  padding-right: 16px;   /* 可选：加点右边距避免贴边 */
+}
+.board{
+  margin-top: 10px;
+  height: 60%;
+  width: 90%;
+  background-color: white;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.btn1{
+  height: 40px;
+  width: 120px;
+  color: white;
+  background-color: #499ecb;
+  border-radius: 20px;
+  border: none;
+}
+.right{
+  height: 100%;
+  flex:1;
+  display: flex;
+  justify-content:center;
+  align-items: center; 
+}
+.two{
+  height: 30%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+/* 学习路径和章节学习 */
+.study-section {
+  width: 90%;
+  margin: 20px auto;
 }
 
-.learning-paths {
-  padding: 0 16px;
+.path-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.path-cards {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.path-cards::-webkit-scrollbar {
+  display: none;
 }
 
 .path-card {
+  flex: 0 0 auto;
+  width: 120px;
+  background: white;
   border-radius: 12px;
-  transition: all 0.3s ease;
-  height: 100%;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-}
-
-.path-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.progress-status {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px dashed #e8e8e8;
+}
+.path-card .stars {
+  margin-bottom: 6px;
 }
 
-.status-tag {
-  flex: 1;
-  text-align: center;
+.path-card .subject {
+  font-weight: bold;
+  font-size: 14px;
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
-  .learning-progress-page {
-    padding: 12px;
-  }
+.path-card .subject-en {
+  font-size: 12px;
+  color: #999;
+}
 
-  .progress-status {
-    flex-direction: column;
-    gap: 12px;
-  }
+.path-card .icon {
+  width: 36px;
+  height: 36px;
+  margin-top: 8px;
+}
 
-  .status-tag {
-    text-align: center;
-  }
+.chapter-header {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.chapter-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.chapter-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.time-info {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar .ant-progress-outer {
+  border-radius: 4px;
+}
+
+.progress-bar .ant-progress-inner {
+  background-color: #13a9a9;
+}
+/* 包裹容器：固定高度 + 竖向滚动 */
+.chapter-list-container {
+  max-height: 300px; /* 可根据需求调整，比如 180px / 220px */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px; /* 避免滚动条遮挡内容（可选） */
+}
+
+/* 滚动条美化（可选） */
+.chapter-list-container::-webkit-scrollbar {
+  width: 3px;
+}
+.chapter-list-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+.chapter-list-container::-webkit-scrollbar-track {
+  background-color: #f0f0f0;
+}
+
+/* 原有的 .chapter-item 不需要改高度，让它自然排列 */
+.chapter-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  /* 移除 height / max-height，由容器控制整体高度 */
+}
+
+/* 如果你仍担心单个 item 太高，可以加一点约束 */
+.chapter-title,
+.time-info {
+  word-break: break-word;
+  line-height: 1.4;
 }
 </style>
