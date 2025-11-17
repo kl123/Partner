@@ -7,14 +7,6 @@
     
     <div class="controls">
       <div class="filter-group">
-        <!-- <select v-model="filters.subject">
-          <option value="all">所有科目</option>
-          <option value="math">数学</option>
-          <option value="science">科学</option>
-          <option value="history">历史</option>
-          <option value="english">英语</option>
-        </select> -->
-        
         <select v-model="filters.sortBy">
           <option value="newest">最新优先</option>
           <option value="oldest">最旧优先</option>
@@ -45,11 +37,6 @@
         <h3>{{ stats.totalTime }}分钟</h3>
         <p>总学习时间</p>
       </div>
-      <!-- <div class="stat-card">
-        <i class="fas fa-chart-line"></i>
-        <h3>{{ stats.improvement }}%</h3>
-        <p>进步幅度</p>
-      </div> -->
     </div>
     
     <div class="results-grid">

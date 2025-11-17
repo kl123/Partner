@@ -2,62 +2,74 @@
   <div class="question-generator">
     <!-- 配置面板 -->
     <div class="config-panel glass-card">
-      <h2 class="section-title">📝 题目生成配置</h2>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">📚 科目：</label>
+      <div class="panel-header">
+        <h2 class="section-title bg-box">题目生成配置 <img src="../assets/台灯图标.png" class="icon-lamp"></h2>
+      </div>
+      <div class="form-container">
+        <!-- 科目输入卡片（同行布局） -->
+        <div class="form-card inline-form">
+          <label class="form-label bg-box"><img src="../assets/科目图标.png" class="icon-subject"> 科目：</label>
           <input type="text" v-model="configData.subject" placeholder="例如：数学" 
                  :class="['form-input', { 'input-error': errors.subject }]"
                  @blur="validateField('subject')">
-          <span v-if="errors.subject" class="error-message">{{ errors.subject }}</span>
+          <span v-if="errors.subject" class="error-message bg-box">{{ errors.subject }}</span>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">🎯 知识点描述：</label>
-          <textarea v-model="configData.description" placeholder="例如：关于大学的微积分内容" 
+        <!-- 知识点描述（独占一行） -->
+        <div class="form-group full-width">
+          <label class="form-label bg-box"><img src="../assets/描述图标.png" class="icon-knowledge">知识点描述：</label>
+          <textarea v-model="configData.description" placeholder="例如：大学的微积分内容" 
                     :class="['form-textarea', { 'input-error': errors.description }]"
                     @blur="validateField('description')"></textarea>
-          <span v-if="errors.description" class="error-message">{{ errors.description }}</span>
+          <span v-if="errors.description" class="error-message bg-box">{{ errors.description }}</span>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">🏷️ 知识点：</label>
+        <!-- 知识点（独占一行） -->
+        <div class="form-group full-width">
+          <label class="form-label bg-box"><img src="../assets/知识点图标.png" class="icon-tag"> 知识点：</label>
           <input type="text" v-model="configData.display_name" placeholder="例如：微分方程" 
                  :class="['form-input', { 'input-error': errors.display_name }]"
                  @blur="validateField('display_name')">
-          <span v-if="errors.display_name" class="error-message">{{ errors.display_name }}</span>
+          <span v-if="errors.display_name" class="error-message bg-box">{{ errors.display_name }}</span>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">⭐ 难度等级 (1-5)：</label>
+        <!-- 难度等级（独占一行） -->
+        <div class="form-group full-width">
+          <label class="form-label bg-box"><img src="../assets/难度等级图标.png" class="icon-difficulty"> 难度等级 (1-5)：</label>
           <div class="difficulty-slider">
             <input type="range" min="1" max="5" v-model="configData.difficulty" class="slider">
-            <span class="difficulty-value">{{ configData.difficulty }}</span>
+            <span class="difficulty-value bg-box">{{ configData.difficulty }}</span>
           </div>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">🔢 选择题数量：</label>
-          <input type="number" min="0" max="10" v-model="configData.choice" 
-                 :class="['form-input', { 'input-error': errors.choice }]"
-                 @blur="validateField('choice')">
-          <span v-if="errors.choice" class="error-message">{{ errors.choice }}</span>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">🔢 判断题数量：</label>
-          <input type="number" min="0" max="10" v-model="configData.TorF" 
-                 :class="['form-input', { 'input-error': errors.TorF }]"
-                 @blur="validateField('TorF')">
-          <span v-if="errors.TorF" class="error-message">{{ errors.TorF }}</span>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">🔢 解答题数量：</label>
-          <input type="number" min="0" max="10" v-model="configData.response" 
-                 :class="['form-input', { 'input-error': errors.response }]"
-                 @blur="validateField('response')">
-          <span v-if="errors.response" class="error-message">{{ errors.response }}</span>
+        <!-- 题型数量输入区（一行三个卡片） -->
+        <div class="form-row">
+          <!-- 选择题数量（同行布局） -->
+          <div class="form-card inline-form">
+            <label class="form-label bg-box"><img src="../assets/数量图标1.png" class="icon-choice"> 选择题：</label>
+            <input type="number" min="0" max="10" v-model="configData.choice" 
+                   :class="['form-input', { 'input-error': errors.choice }]"
+                   @blur="validateField('choice')">
+            <span v-if="errors.choice" class="error-message bg-box">{{ errors.choice }}</span>
+          </div>
+          
+          <!-- 判断题数量（同行布局） -->
+          <div class="form-card inline-form">
+            <label class="form-label bg-box"><img src="../assets/数量图标2.png" class="icon-judge">判断题：</label>
+            <input type="number" min="0" max="10" v-model="configData.TorF" 
+                   :class="['form-input', { 'input-error': errors.TorF }]"
+                   @blur="validateField('TorF')">
+            <span v-if="errors.TorF" class="error-message bg-box">{{ errors.TorF }}</span>
+          </div>
+          
+          <!-- 解答题数量（同行布局） -->
+          <div class="form-card inline-form">
+            <label class="form-label bg-box"><img src="../assets/数量图标3.png" class="icon-essay"> 解答题：</label>
+            <input type="number" min="0" max="10" v-model="configData.response" 
+                   :class="['form-input', { 'input-error': errors.response }]"
+                   @blur="validateField('response')">
+            <span v-if="errors.response" class="error-message bg-box">{{ errors.response }}</span>
+          </div>
         </div>
       </div>
       
@@ -66,116 +78,24 @@
         {{ loading ? '生成中...' : '🚀 生成题目' }}
       </button>
 
-      <div v-if="!isFormValid" class="form-hint">
+      <div v-if="!isFormValid" class="form-hint bg-box">
         ⚠️ 请填写所有必填字段并至少设置一种题型的数量
-      </div>
-    </div>
-
-    <!-- 空状态提示 -->
-    <div v-if="questions.length === 0 && !loading" class="empty-state glass-card">
-      <div class="empty-content">
-        <div class="empty-icon">📚</div>
-        <h3>暂无题目</h3>
-        <p>请先配置题目参数并点击"生成题目"按钮</p>
-        <div class="empty-tips">
-          <p>💡 使用提示：</p>
-          <ul>
-            <li>设置选择题、判断题、解答题的数量</li>
-            <li>至少设置一种题型的数量（大于0）</li>
-            <li>填写所有必填字段（科目、知识点描述、显示名称）</li>
-            <li>调整难度等级</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- 题目展示区域 -->
-    <div class="questions-container" v-else-if="questions.length > 0">
-      <h2 class="section-title">📋 生成的题目</h2>
-      <div class="questions-actions">
-          
-        </div>
-      <div v-for="(question, index) in questions" :key="question.id" class="question-card glass-card">
-        <div class="question-header">
-          <span class="question-number">{{ question.id }}</span>
-          <!-- <span class="question-type" :class="getTypeClass(question.type)">{{ question.type }}</span> -->
-        </div>
-        
-        <div class="question-content" v-html="question.text"></div>
-        
-        <!-- 选择题选项 -->
-        <div v-if="question.type === 'choice'" class="options-grid">
-          <div v-for="(option, optIndex) in question.options" :key="optIndex" 
-               class="option-item" :class="{ selected: question.userAnswer === optIndex }"
-               @click="selectOption(question, optIndex)">
-            <span class="option-letter">{{ String.fromCharCode(65 + optIndex) }}</span>
-            <span class="option-text">{{ option }}</span>
-          </div>
-        </div>
-        
-        <!-- 判断题选项 -->
-        <div v-if="question.type === 'judgment'" class="true-false-grid">
-          <button class="tf-btn true-btn" :class="{ selected: question.userAnswer === true }" 
-                  @click="updatauseranswer(question,'正确')">
-            ✅ 正确
-          </button>
-          <button class="tf-btn false-btn" :class="{ selected: question.userAnswer === false }" 
-                  @click="updatauseranswer(question,'错误')">
-            ❌ 错误
-          </button>
-        </div>
-        
-        <!-- 解答题输入区域 -->
-        <div v-if="question.type === 'essay'" class="answer-area">
-          <textarea  placeholder="✏️ 请输入您的解答..." 
-                    class="answer-textarea"></textarea>
-        </div>
-        
-        <!-- 答案提交和显示 -->
-        <div class="question-actions">
-          <button @click="submitAnswer(question)" class="submit-btn secondary-btn">
-            📤 提交答案
-          </button>
-          <p></p>
-          <button @click="add(question)" class="submit-btn secondary-btn">
-            📤 上传至错题集
-          </button>
-          <div v-if="question.showAnswer" class="answer-section">
-            <h4 class="answer-title">📖 参考答案：</h4>
-            <div class="answer-content" v-html="question.answer"></div>
-            <div v-if="question.isSubmitted&&['choice', 'judgment'].includes(question.type)" class="answer-feedback" 
-                 :class="{ correct: question.userAnswer==question.answer, incorrect: question.userAnswer!=question.answer }">
-              {{ question.isCorrect ? '✅ 您的答案正确！' : '❌ 您的答案不正确。' }}
-            </div>
-          </div>
-        </div>
-        </div>
-        <div class="footer-actions">
-          <!-- <button @click="saveProgress" class="save-btn secondary-btn">
-            💾 保存进度
-          </button> -->
-        <button @click="submitAllAnswers" class="submit-all-btn primary-btn">
-          📨 提交所有答案
-        </button>
-        <button @click="resetQuestions" class="reset-all-btn danger-btn">
-          🔄 重新生成题目
-        </button>
       </div>
     </div>
 
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-overlay">
-      <div class="loading-content">
+      <div class="loading-content bg-box">
         <div class="spinner"></div>
-        <p class="loading-text">✨ 正在生成题目，请稍候...</p>
+        <p class="loading-text bg-box">✨ 正在生成题目，请稍候...</p>
       </div>
     </div>
 
     <!-- 错误提示 -->
     <div v-if="error" class="error-toast">
-      <div class="error-content">
+      <div class="error-content bg-box">
         <span class="error-icon">⚠️</span>
-        <p class="error-text">{{ error }}</p>
+        <p class="error-text bg-box">{{ error }}</p>
         <button @click="error = ''" class="dismiss-btn">×</button>
       </div>
     </div>
@@ -183,13 +103,10 @@
 </template>
 
 <script>
-import { addtest } from '@/api/test';
-import { adderror } from '@/api_py/add';
-import { getquestionanswer } from '@/api_py/add';
 import axios from 'axios';
 
 export default {
-  name: 'QuestionGenerator',
+  name: 'Test',
   data() {
     return {
       configData: {
@@ -209,12 +126,8 @@ export default {
         TorF: "",
         response: ""
       },
-      score:0,
-      questions: [],
       loading: false,
       error: '',
-      showDebug: false,
-      // 新增：保存原始配置数据
       originalConfig: null
     };
   },
@@ -226,128 +139,9 @@ export default {
         this.configData.description.trim() !== '' &&
         this.configData.display_name.trim() !== ''
       );
-    },
-    totalQuestions() {
-      return this.configData.choice + this.configData.TorF + this.configData.response;
     }
   },
   methods: {
-    // 重置题目方法
-    resetQuestions() {
-      // 1. 清空当前题目数组
-      this.questions = [];
-      
-      // 2. 重置加载状态和错误信息
-      this.loading = false;
-      this.error = '';
-      
-      // 3. 可选：重置配置表单到初始状态
-      if (this.originalConfig) {
-        this.configData = { ...this.originalConfig };
-      } else {
-        // 重置为默认值
-        this.configData = {
-          subject: "",
-          description: "",
-          display_name: "",
-          difficulty: 3,
-          choice: 0,
-          TorF: 0,
-          response: 0
-        };
-      }
-      
-      // 4. 可选：滚动到顶部
-      this.scrollToTop();
-      
-      // 5. 可选：显示重置成功消息
-      this.showSuccessMessage('题目已重置，可以重新生成新题目');
-    },
-
-    // saveProgress() {
-    //   const progress = {
-    //     config: { ...this.configData },
-    //     questions: this.questions.map(q => ({
-    //       id: q.id,
-    //       userAnswer: q.userAnswer,
-    //       isSubmitted: q.isSubmitted
-    //     })),
-    //     timestamp: new Date().toISOString()
-    //   };
-      
-    //   localStorage.setItem('questionProgress', JSON.stringify(progress));
-    //   this.showSuccessMessage('进度已保存');
-    // },
-    
-    // // 加载保存的进度（可选功能）
-    // loadProgress() {
-    //   const saved = localStorage.getItem('questionProgress');
-    //   if (saved) {
-    //     try {
-    //       const progress = JSON.parse(saved);
-    //       this.configData = progress.config;
-    //       // 可以提示用户是否加载进度
-    //       if (confirm('检测到保存的进度，是否加载？')) {
-    //         this.questions.forEach(q => {
-    //           const savedQ = progress.questions.find(sq => sq.id === q.id);
-    //           if (savedQ) {
-    //             q.userAnswer = savedQ.userAnswer;
-    //             q.isSubmitted = savedQ.isSubmitted;
-    //           }
-    //         });
-    //       }
-    //     } catch (e) {
-    //       console.error('加载进度失败', e);
-    //     }
-    //   }
-    // },
-
-    // 提交所有答案
-    async submitAllAnswers() {
-      const unanswered = this.questions.filter(q => 
-        q.userAnswer === null || q.userAnswer === undefined || q.userAnswer === ''
-      );
-      
-      if (unanswered.length > 0) {
-        if (!confirm(`还有 ${unanswered.length} 道题未作答，确定提交吗？`)) {
-          return;
-        }
-      }
-      let testdata = {
-    "tests": {
-        "title": this.configData.display_name,
-        "score": this.score,
-        "duration": 0,
-    },
-    "titles": []
-  }
-      this.questions.forEach(question => {
-        testdata.titles.push({
-          "userAnswer": question.userAnswer,
-          "showAnswer": question.answer,
-          "isSubmitted": question.isSubmitted?1:0,
-          "isCorrect": question.isCorrect?1:0,
-          "text": question.text,
-          "analysis": '',
-          "type": question.type,
-        })
-      })
-      testdata.tests.score=this.questions.filter(q => q.isCorrect).length;
-      const res = await addtest(testdata);
-      console.log(res)
-    },
-    
-    // 滚动到顶部
-    scrollToTop() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    
-    // 显示成功消息
-    showSuccessMessage(message) {
-      // 可以集成一个消息提示系统
-      alert(message); // 简单实现，可以用更优雅的方式
-    },
-
     validateField(field) {
       switch (field) {
         case 'subject':
@@ -361,15 +155,18 @@ export default {
           break;
         case 'choice':
           this.errors.choice = this.configData.choice === '' ? '选择题数量不能为空' : 
-                             isNaN(this.configData.choice) ? '请输入有效数字' : '';
+                             isNaN(this.configData.choice) ? '请输入有效数字' :
+                             this.configData.choice > 10 ? '最多生成10道题' : '';
           break;
         case 'TorF':
           this.errors.TorF = this.configData.TorF === '' ? '判断题数量不能为空' : 
-                           isNaN(this.configData.TorF) ? '请输入有效数字' : '';
+                           isNaN(this.configData.TorF) ? '请输入有效数字' :
+                           this.configData.TorF > 10 ? '最多生成10道题' : '';
           break;
         case 'response':
           this.errors.response = this.configData.response === '' ? '解答题数量不能为空' : 
-                              isNaN(this.configData.response) ? '请输入有效数字' : '';
+                              isNaN(this.configData.response) ? '请输入有效数字' :
+                              this.configData.response > 10 ? '最多生成10道题' : '';
           break;
       }
     },
@@ -381,7 +178,6 @@ export default {
       this.validateField('choice');
       this.validateField('TorF');
       this.validateField('response');
-
       return Object.values(this.errors).every(error => error === '');
     },
 
@@ -389,652 +185,406 @@ export default {
       const hasQuestions = this.configData.choice > 0 || this.configData.TorF > 0 || this.configData.response > 0;
       if (!hasQuestions) {
         this.error = '请至少设置一种题型的数量（大于0）';
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
         return false;
       }
       return true;
     },
 
     async validateAndGenerate() {
-      // 验证所有字段
       const fieldsValid = this.validateAllFields();
       const questionsValid = this.validateQuestionCount();
-
-      if (!fieldsValid || !questionsValid) {
-        return;
-      }
-
+      if (!fieldsValid || !questionsValid) return;
       await this.generateQuestions();
     },
 
     async generateQuestions() {
       this.loading = true;
       this.error = '';
-      
       try {
-        // 确保数字字段是数字类型
         const requestData = {
           need: {
-            TorF: String(this.configData.TorF),
-            choice: String(this.configData.choice),
+            TorF: Number(this.configData.TorF),
+            choice: Number(this.configData.choice),
             description: this.configData.description,
             difficulty: Number(this.configData.difficulty),
             display_name: this.configData.display_name,
-            response: String(this.configData.response),
+            response: Number(this.configData.response),
             subject: this.configData.subject,
           }
         };
 
-        // 调用API生成题目
-        //需要修改的地方
         const response = await axios.post('http://localhost:8085/workflow/TestAIrun', requestData);
+        let questions = [];
         if (response.data && response.data.data) {
-          const data=response.data.data;
-          const halfLength=Math.ceil(data.length/2);
-          this.questions=[];
-          for(let i=0;i<halfLength;i++){
-            let questionText=data[i];
-            let answerText=data[i+halfLength]||'';
-            let type = 'essay'; // 默认问答题
+          const data = response.data.data;
+          const halfLength = Math.ceil(data.length / 2);
+          for (let i = 0; i < halfLength; i++) {
+            let questionText = data[i];
+            let answerText = data[i + halfLength] || '';
+            let type = 'essay';
             if (questionText.includes('判断题')) type = 'judgment';
             else if (questionText.includes('选择题')) type = 'choice';
-            answerText=answerText
-              .replace(/。/g,'')
-              .replace(/答案/g,'')
-              .replace(/；/g,'')
-              .replace(/：/g,'')
+            
+            // 优化答案格式化逻辑
+            answerText = answerText
+              .replace(/[\u3002\uff1b\uff1a]/g, '')
+              .replace(/答案/g, '')
               .replace(/\n/g, '<br>')
-              .replace(/\\\(/g, '')
-              .replace(/$/g, '')
-              .replace(/\\\)/g, '');
-            questionText=questionText
+              .replace(/\\\(|\)\\/g, ' ');
+            
+            questionText = questionText
               .replace(/\n/g, '<br>')
-              .replace(/\\\(/g, '  ')
-              .replace(/$/g, ' ')
-              .replace(/\\\)/g, '  ');
-            let newquestion={
-                id: i + 1,
-                text: questionText.replace(/\n/g, '<br>')
-              .replace(/\\\(/g, '  ')
-              .replace(/$/g, ' ')
-              .replace(/\\\)/g, '  '),
-                type: type,
-                answer:answerText,
-                userAnswer: false,
-                showAnswer: false,
-                isSubmitted: false,
-                options: type === 'choice' ? ["选项A", "选项B", "选项C", "选项D"] : [],
-                isCorrect: false
-              }
-            this.questions.push(newquestion)
+              .replace(/\\\(|\)\\/g, ' ');
+
+            questions.push({
+              id: i + 1,
+              text: questionText,
+              type: type,
+              answer: answerText,
+              userAnswer: false,
+              showAnswer: false,
+              isSubmitted: false,
+              options: type === 'choice' ? ["选项A", "选项B", "选项C", "选项D"] : [],
+              isCorrect: false
+            });
           }
-          
-      } else {
-          // 模拟数据，实际使用时删除
-          this.questions = this.generateMockQuestions();
+        } else {
+          questions = this.generateMockQuestions();
         }
+
+        // 路由传参优化（使用params避免URL暴露）
+        this.$router.push({
+          name: 'testgo',
+          params: {
+            questions: questions,
+            configData: this.configData
+          }
+        });
+
       } catch (error) {
         console.error('生成题目失败:', error);
         this.error = '生成题目失败，请检查网络连接或API地址';
-        // 使用模拟数据作为备选
-        this.questions = this.generateMockQuestions();
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
+        const questions = this.generateMockQuestions();
+        this.$router.push({
+          name: 'TestGo',
+          params: {
+            questions: questions,
+            configData: this.configData
+          }
+        });
       } finally {
         this.loading = false;
       }
     },
-    
 
     generateMockQuestions() {
       const mockQuestions = [];
-      
-      // 生成选择题
+      // 选择题
       for (let i = 0; i < this.configData.choice; i++) {
         mockQuestions.push({
-          type: "选择题",
-          content: `微分方程相关选择题 ${i + 1}`,
+          id: mockQuestions.length + 1,
+          type: "choice",
+          text: `微分方程相关选择题 ${i + 1}`,
           options: ["选项A", "选项B", "选项C", "选项D"],
-          answer: "选项A"
+          answer: "选项A",
+          userAnswer: null,
+          showAnswer: false,
+          isSubmitted: false,
+          isCorrect: false
         });
       }
-      
-      // 生成判断题
+      // 判断题
       for (let i = 0; i < this.configData.TorF; i++) {
         mockQuestions.push({
-          type: "判断题",
-          content: `微分方程相关判断题 ${i + 1}`,
-          answer: i % 2 === 0 ? "正确" : "错误"
+          id: mockQuestions.length + 1,
+          type: "judgment",
+          text: `微分方程相关判断题 ${i + 1}`,
+          answer: i % 2 === 0 ? "正确" : "错误",
+          userAnswer: null,
+          showAnswer: false,
+          isSubmitted: false,
+          isCorrect: false,
+          options: []
         });
       }
-      
-      // 生成解答题
+      // 解答题
       for (let i = 0; i < this.configData.response; i++) {
         mockQuestions.push({
-          type: "解答题",
-          content: `求解微分方程相关问题 ${i + 1}`,
-          answer: "解题步骤和最终答案"
+          id: mockQuestions.length + 1,
+          type: "essay",
+          text: `求解微分方程相关问题 ${i + 1}`,
+          answer: "解题步骤：<br>1. 确定方程类型<br>2. 选择合适的求解方法<br>3. 代入初始条件<br>4. 验证解的正确性",
+          userAnswer: null,
+          showAnswer: false,
+          isSubmitted: false,
+          isCorrect: false,
+          options: []
         });
       }
-      
-      return mockQuestions.map(q => ({
-        ...q,
-        userAnswer: null,
-        showAnswer: false,
-        isSubmitted: false,
-        isCorrect: false
-      }));
-    },
-
-    formatQuestionContent(text) {
-      if (text) return '';
-      return text.replace(/\n/g, '<br>');
-    },
-
-    submitAnswer(question) {
-      question.isSubmitted = true;
-      question.showAnswer = true;
-      
-      // 简单的答案验证逻辑
-      if (question.type === 'choice') {
-        question.isCorrect = question.userAnswer == question.answer.replace(/A/g,'0').replace(/B/g,'1').replace(/C/g,'2').replace(/D/g,'3');
-        this.score+=question.isCorrect?1:0;
-      } else if (question.type === 'judgment') {
-        question.isCorrect = question.userAnswer == question.answer.replace(/正确/g,'true').replace(/错误/g,'false');
-        this.score+=question.isCorrect?1:0;
-      } else if (question.type === 'essay') {
-        question.isCorrect = question.userAnswer == question.answer;
-        this.score+=question.isCorrect?1:0;
-      }
-    },
-
-    selectOption(question, optionIndex) {
-      question.userAnswer = optionIndex;
-    },
-    updatauseranswer(question,value){
-      question.userAnswer=value;
-    },
-    async add(question){
-      const username =localStorage.getItem("username")
-      const questionanswer=await getquestionanswer({input:question.text})
-      console.log(questionanswer)
-      const dedata={
-        input:{
-        "question":question.text,
-        "correct_answer":question.answer,
-        "error_answer":String(question.userAnswer),
-        "reason":questionanswer.data,
-        "username":username,}
-      }
-      const res=await adderror(dedata)
-      console.log(res)
-    },
-
-    getTypeClass(type) {
-      const typeClasses = {
-        '选择题': 'type-choice',
-        '解答题': 'type-essay',
-        '判断题': 'type-judge'
-      };
-      return typeClasses[type] || '';
-    },
-
-  },
-  mounted() {
-    // 组件加载时尝试恢复进度
-    // this.loadProgress();
+      return mockQuestions;
+    }
   }
 };
 </script>
 
 <style scoped>
-/* 原有的所有样式保持不变，只添加错误样式 */
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.reset-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
-
-.danger-btn {
-  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-  color: white;
-}
-
-.danger-btn:hover {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
-}
-
-.questions-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.reset-questions-btn, .save-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
-
-.footer-actions {
+/* 基础样式重置 - 加深背景色 */
+.question-generator {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  /* 加深背景色：深蓝色系渐变，更沉稳 */
+  background: linear-gradient(135deg, #6686df 0%, #748dde 100%);
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  gap: 2rem;
-  margin-top: 2rem;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 15px;
+  align-items: flex-start;
+  padding: 30px 20px;
 }
 
-.submit-all-btn, .reset-all-btn {
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .panel-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .questions-actions {
-    flex-direction: column;
-  }
-  
-  .footer-actions {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .submit-all-btn, .reset-all-btn {
-    width: 100%;
-  }
-}
-/** */
-.input-error {
-  border-color: #f56565 !important;
-  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1) !important;
-}
-
-.error-message {
-  color: #e53e3e;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  display: block;
-}
-
-.form-group {
-  position: relative;
-}
-
-/* 其他原有样式保持不变 */
-.question-generator {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-}
-
+/* 外层玻璃卡片 - 半透明白色，与深色背景形成对比 */
 .glass-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 24px;
+  padding: 28px;
+  /* 深色背景下增强阴影，提升层次感 */
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(240, 244, 248, 0.9);
+  width: 100%;
+  max-width: 700px;
 }
 
-.section-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 1.5rem;
+.panel-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f4f8;
   text-align: center;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+/* 标题圆弧框 - 淡蓝色，与深色背景协调 */
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #1e3a8a; /* 深色文字，提高可读性 */
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.5px;
+  padding: 12px 24px;
+}
+
+.icon-lamp {
+  margin-left: 10px;
+  font-size: 1.3rem;
+  color: #3b82f6; /* 淡蓝色图标 */
+}
+
+/* 表单容器：统一间距 */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+/* 一行多卡片布局 */
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* 输入框背景卡片 - 淡灰色，比之前更淡 */
+.form-card {
+  background-color: #f8fafc; /* 极淡的灰色，接近白色但有层次 */
+  border-radius: 20px;
+  padding: 18px;
+  /* 深色背景下阴影调整为柔和深色 */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0; /* 淡灰色边框 */
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* 卡片hover效果 - 阴影加深，轻微上浮 */
+.form-card:hover {
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+}
+
+/* 同行布局核心样式 */
+.inline-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
+/* 独占一行的表单组 */
+.full-width {
+  width: 100%;
+}
+
+/* 标签圆弧框 - 淡蓝色，更浅的色调 */
 .form-label {
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #1e3a8a; /* 深色文字，提高可读性 */
   font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  white-space: nowrap;
 }
 
+.form-label i {
+  color: #3b82f6; /* 淡蓝色图标 */
+  font-size: 1.1rem;
+}
+
+/* 同行布局的输入框 */
+.inline-form .form-input {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* 输入框样式 - 极淡的背景，淡边框 */
 .form-input, .form-textarea {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0; /* 淡灰色边框 */
+  border-radius: 14px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
+  background: #ffffff; /* 白色背景，突出输入区域 */
+  color: #1e293b; /* 深色文字，提高可读性 */
 }
 
+/* 输入框聚焦状态 - 淡蓝色边框和阴影 */
 .form-input:focus, .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #93c5fd; /* 极淡的蓝色边框 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* 淡蓝色阴影 */
 }
 
 .form-textarea {
-  min-height: 100px;
+  min-height: 90px;
   resize: vertical;
+  line-height: 1.6;
+  width: 100%;
 }
 
+/* 难度滑块样式 - 适配深色背景 */
 .difficulty-slider {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 12px;
+  padding: 4px 0;
+  width: 100%;
+  max-width: 500px;
 }
 
 .slider {
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: #e2e8f0; /* 淡灰色滑块背景 */
   outline: none;
   -webkit-appearance: none;
 }
 
+/* 滑块按钮 - 淡蓝色 */
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #667eea;
+  background: #3b82f6; /* 淡蓝色滑块 */
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+  transition: all 0.2s ease;
 }
 
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #2563eb; /* hover时加深一点蓝色 */
+}
+
+/* 难度数值圆弧框 - 淡蓝色 */
 .difficulty-value {
-  font-weight: 700;
-  color: #667eea;
-  min-width: 30px;
+  font-weight: 600;
+  color: #1e3a8a;
+  min-width: 28px;
   text-align: center;
+  font-size: 1.05rem;
+  padding: 6px 12px;
 }
 
-.primary-btn, .secondary-btn {
-  padding: 1rem 2rem;
+/* 生成按钮 - 渐变蓝色，比之前稍淡 */
+.primary-btn {
+  padding: 14px 24px;
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
+  border-radius: 16px;
+  font-size: 1.05rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.primary-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* 淡蓝色渐变 */
   color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .primary-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); /* hover时加深 */
 }
 
 .primary-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.secondary-btn {
-  background: #48bb78;
-  color: white;
-  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
-}
-
-.secondary-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
-}
-
+/* 表单提示 - 淡黄色 */
 .form-hint {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
-  border-radius: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
   color: #92400e;
-  text-align: center;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  margin-top: 2rem;
-}
-
-.empty-content {
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  font-size: 1.5rem;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-  color: #6b7280;
-  margin-bottom: 2rem;
-}
-
-.empty-tips {
-  text-align: left;
-  background: #f9fafb;
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid #667eea;
-}
-
-.empty-tips p {
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.empty-tips ul {
-  color: #6b7280;
-  padding-left: 1.5rem;
-}
-
-.empty-tips li {
-  margin-bottom: 0.25rem;
-}
-
-.questions-container {
-  margin-top: 2rem;
-}
-
-.question-card {
-  margin-bottom: 1.5rem;
-  transition: transform 0.3s ease;
-}
-
-.question-card:hover {
-  transform: translateY(-2px);
-}
-
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f7fafc;
-}
-
-.question-number {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #2d3748;
-}
-
-.question-type {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
   font-size: 0.9rem;
-  font-weight: 600;
-  color: white;
+  line-height: 1.5;
+  text-align: center;
 }
 
-.type-choice { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.type-essay { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.type-judge { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-
-.question-content {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #2d3748;
-  margin-bottom: 1.5rem;
-}
-
-.options-grid {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.option-item:hover {
-  border-color: #667eea;
-  background: #f7fafc;
-}
-
-.option-item.selected {
-  background: #ebf4ff;
-  border-color: #667eea;
-}
-
-.option-letter {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #667eea;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-}
-
-.option-text {
-  flex: 1;
-  color: #4a5568;
-}
-
-.true-false-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.tf-btn {
-  padding: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.true-btn:hover, .true-btn.selected {
-  background: #48bb78;
-  color: white;
-  border-color: #48bb78;
-}
-
-.false-btn:hover, .false-btn.selected {
-  background: #f56565;
-  color: white;
-  border-color: #f56565;
-}
-
-.answer-textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  resize: vertical;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.answer-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.question-actions {
-  margin-top: 1.5rem;
-}
-
-.answer-section {
-  margin-top: 1rem;
-  padding: 1.5rem;
-  background: #f0fff4;
-  border-radius: 12px;
-  border-left: 4px solid #48bb78;
-}
-
-.answer-title {
-  color: #2f855a;
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-}
-
-.answer-content {
-  color: #38a169;
-  line-height: 1.6;
-}
-
+/* 加载状态 - 适配深色背景 */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.7); /* 深色半透明背景 */
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1042,20 +592,24 @@ export default {
 }
 
 .loading-content {
-  background: white;
-  padding: 2rem;
+  background: #f8fafc; /* 淡灰色卡片 */
+  padding: 32px 48px;
   border-radius: 20px;
   text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #667eea;
+  width: 48px;
+  height: 48px;
+  border: 4px solid #dbeafe; /* 淡蓝色边框 */
+  border-top: 4px solid #3b82f6; /* 淡蓝色进度条 */
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -1064,47 +618,62 @@ export default {
 }
 
 .loading-text {
-  color: #4a5568;
+  color: #1e3a8a;
   font-weight: 500;
+  font-size: 1.05rem;
+  padding: 10px 20px;
+  margin: 0;
 }
 
+/* 错误提示 - 淡红色 */
 .error-toast {
   position: fixed;
-  top: 2rem;
-  right: 2rem;
+  top: 30px;
+  right: 30px;
   z-index: 1000;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.3s ease forwards;
 }
 
 .error-content {
-  background: #fed7d7;
-  border: 1px solid #feb2b2;
-  border-radius: 12px;
-  padding: 1rem;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
+  border-radius: 14px;
 }
 
 .error-icon {
   font-size: 1.2rem;
+  color: #ef4444;
 }
 
 .error-text {
-  color: #c53030;
+  color: #b91c1c;
   margin: 0;
   flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 6px 12px;
 }
 
 .dismiss-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
-  color: #c53030;
+  font-size: 1.3rem;
+  color: #b91c1c;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.dismiss-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 @keyframes slideIn {
@@ -1118,46 +687,141 @@ export default {
   }
 }
 
+/* 错误输入样式 - 淡红色边框和阴影 */
+.input-error {
+  border-color: #fecaca !important; /* 淡红色边框 */
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08) !important; /* 淡红色阴影 */
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  display: inline-block;
+  line-height: 1.4;
+  padding: 6px 12px;
+  width: 100%;
+  margin-left: 0;
+}
+
+/* 圆弧框通用样式 - 统一淡色调 */
+.bg-box {
+  border-radius: 30px;
+  background-color: #eff6ff; /* 极淡的蓝色背景 */
+  transition: all 0.2s ease;
+}
+
+/* 不同文字区域的圆弧框配色区分 - 均调淡 */
+.section-title.bg-box {
+  background-color: #dbeafe; /* 淡蓝色 */
+  border: 1px solid #bfdbfe; /* 更淡的蓝色边框 */
+}
+
+.form-label.bg-box {
+  background-color: #eff6ff; /* 极淡的蓝色 */
+  border: 1px solid #dbeafe; /* 淡蓝色边框 */
+}
+
+.difficulty-value.bg-box {
+  background-color: #dbeafe; /* 淡蓝色 */
+  border: 1px solid #bfdbfe; /* 淡蓝色边框 */
+}
+
+.error-message.bg-box {
+  background-color: #fee2e2; /* 极淡的红色 */
+  border: 1px solid #fecaca; /* 淡红色边框 */
+}
+
+.form-hint.bg-box {
+  background-color: #fffbeb; /* 极淡的黄色 */
+  border: 1px solid #fef3c7; /* 淡黄色边框 */
+}
+
+.loading-text.bg-box {
+  background-color: #eff6ff; /* 极淡的蓝色 */
+  border: 1px solid #dbeafe; /* 淡蓝色边框 */
+}
+
+.error-content.bg-box {
+  background-color: #fee2e2; /* 极淡的红色 */
+  border: 1px solid #fecaca; /* 淡红色边框 */
+}
+
+.error-text.bg-box {
+  background-color: #fef2f2; /* 极淡的红色 */
+  border: 1px solid #fee2e2; /* 淡红色边框 */
+}
+
+/* 图标样式 */
+.icon-subject {
+  content: "📚";
+}
+.icon-knowledge {
+  content: "📖";
+}
+.icon-tag {
+  content: "🏷️";
+}
+.icon-difficulty {
+  content: "🎯";
+}
+.icon-choice {
+  content: "🔘";
+}
+.icon-judge {
+  content: "✅";
+}
+.icon-essay {
+  content: "✍️";
+}
+
+/* 响应式适配 */
 @media (max-width: 768px) {
-  .question-generator {
-    padding: 1rem;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .glass-card {
-    padding: 1.5rem;
+    max-width: 100%;
+    padding: 20px 16px;
   }
   
-  .section-title {
-    font-size: 1.5rem;
+  .form-row {
+    gap: 12px;
   }
   
-  .true-false-grid {
-    grid-template-columns: 1fr;
+  .form-card {
+    min-width: 100%;
+  }
+  
+  .inline-form {
+    gap: 8px;
   }
 }
 
 @media (max-width: 480px) {
-  .question-header {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: flex-start;
+  .section-title {
+    font-size: 1.4rem;
+    padding: 10px 20px;
   }
   
-  .primary-btn, .secondary-btn {
-    width: 100%;
-    justify-content: center;
+  .form-card {
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   }
   
-  .empty-state {
-    padding: 2rem 1rem;
+  .form-label {
+    font-size: 0.9rem;
+    padding: 6px 12px;
   }
   
-  .empty-icon {
-    font-size: 3rem;
+  .form-input, .form-textarea {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+  
+  .inline-form .form-input {
+    min-width: 80px;
+  }
+  
+  .bg-box {
+    border-radius: 24px;
   }
 }
 </style>
