@@ -10,3 +10,4 @@ export const addclass = (data) => {
         course:data
     })
   }
+  
