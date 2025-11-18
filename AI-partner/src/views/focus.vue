@@ -2,114 +2,120 @@
   <div class="app-container">
     <!-- 顶部导航栏 -->
     <div class="top-nav">
-      <button class="nav-btn back-btn" @click="$router.back()" aria-label="返回">
-        <LeftOutlined />
-      </button>
-      <div class="nav-title">{{ title }}</div>
-      <div class="nav-spacer"></div>
+      <button class="nav-btn" :class="{ active: tab === 'day' }" @click="tab = 'day'">日数据</button>
+      <button class="nav-btn" :class="{ active: tab === 'week' }" @click="tab = 'week'">周数据</button>
+      <button class="nav-btn" :class="{ active: tab === 'month' }" @click="tab = 'month'">月数据</button>
     </div>
 
     <!-- 本周专注度与分类统计 -->
     <div class="stats-row">
       <div class="focus-card">
-        <div ref="ringRef" class="focus-ring"></div>
-        <div class="focus-percentage">今日专注度 {{ perc.focus }}%</div>
+        <!-- <div class="circle-chart">
+          <div class="circle-bg"></div>
+          <div class="circle-progress" :style="{ strokeDasharray: `${40 * 2 * Math.PI / 100 * 100}px ${2 * Math.PI * 100}px` }"></div>
+          <div class="circle-text">40%</div>
+        </div> -->
+        <img src="../assets/环形图.png" alt="本周专注度" class="focus-img">
       </div>
       <div class="stats-list">
         <div class="stat-item">
           <img src="../assets/xpc.png" alt="打瞌睡" class="stat-icon">
           <span>打瞌睡</span>
-          <span>{{ perc.sleep }}%</span>
+          <span>25%</span>
         </div>
         <div class="stat-item">
           <img src="../assets/pgs.png" alt="专注学习" class="stat-icon">
           <span>专注学习</span>
-          <span>{{ perc.study }}%</span>
+          <span>40%</span>
         </div>
         <div class="stat-item">
           <img src="../assets/mx.png" alt="分心" class="stat-icon">
           <span>分心</span>
-          <span>{{ perc.distraction }}%</span>
+          <span>35%</span>
         </div>
       </div>
     </div>
 
-    <!--、 AI助手报告分析按钮 -->
-    <button v-if="!reportHtml" class="analysis-btn" :disabled="listening" @click="startReportListener">
-      {{ listening ? '正在获取…' : '获取学习报告' }}
-    </button>
-    <div v-if="reportHtml" class="report-card">
-      <div v-html="reportHtml"></div>
-    </div>
+    <<<<<<< HEAD <!--、 AI助手报告分析按钮 -->
+      <button v-if="!reportHtml" class="analysis-btn" :disabled="listening" @click="startReportListener">
+        {{ listening ? '正在获取…' : '获取学习报告' }}
+      </button>
+      <div v-if="reportHtml" class="report-card">
+        <div v-html="reportHtml"></div>
+      </div>
+      =======
+      <!-- AI助手报告分析按钮 -->
+      <button class="analysis-btn">AI助手报告分析</button>
+      >>>>>>> jyx
 
-    <!-- 姿态监测与提醒记录 -->
-    <div class="monitor-row">
-      <div class="monitor-card">
-        <h4>姿态监测统计</h4>
-        <div class="bar-chart">
-          <div class="bar-item">
-            <span>犯困</span>
-            <div class="bar" :style="{ width: perc.sleep + '%' }"></div>
-          </div>
-          <div class="bar-item">
-            <span>发呆</span>
-            <div class="bar" :style="{ width: perc.idle + '%' }"></div>
-          </div>
-          <div class="bar-item">
-            <span>学习</span>
-            <div class="bar" :style="{ width: perc.study + '%' }"></div>
-          </div>
-          <div class="bar-item">
-            <span>走动</span>
-            <div class="bar" :style="{ width: perc.walk + '%' }"></div>
-          </div>
-          <div class="bar-item">
-            <span>玩手机</span>
-            <div class="bar" :style="{ width: perc.phone + '%' }"></div>
-          </div>
-          <div class="axis">20% 40% 60% 80%</div>
-        </div>
-      </div>
-      <div class="remind-card">
-        <h4>触发提醒记录</h4>
-        <div class="remind-list">
-          <div class="remind-item">
-            <span>周一10:35</span>
-            <span>提醒！发呆超过15分钟</span>
-          </div>
-          <div class="remind-item">
-            <span>周一14:48</span>
-            <span>休息！学习超过60分钟</span>
-          </div>
-          <div class="remind-item">
-            <span>周一16:27</span>
-            <span>提醒！玩手机超过30分钟</span>
+      <!-- 姿态监测与提醒记录 -->
+      <div class="monitor-row">
+        <div class="monitor-card">
+          <h4>姿态监测统计</h4>
+          <div class="bar-chart">
+            <div class="bar-item">
+              <span>犯困</span>
+              <div class="bar" :style="{ width: '5%' }"></div>
+            </div>
+            <div class="bar-item">
+              <span>发呆</span>
+              <div class="bar" :style="{ width: '10%' }"></div>
+            </div>
+            <div class="bar-item">
+              <span>学习</span>
+              <div class="bar" :style="{ width: '40%' }"></div>
+            </div>
+            <div class="bar-item">
+              <span>走动</span>
+              <div class="bar" :style="{ width: '15%' }"></div>
+            </div>
+            <div class="bar-item">
+              <span>玩手机</span>
+              <div class="bar" :style="{ width: '30%' }"></div>
+            </div>
+            <div class="axis">20% 40% 60% 80%</div>
           </div>
         </div>
+        <div class="remind-card">
+          <h4>触发提醒记录</h4>
+          <div class="remind-list">
+            <div class="remind-item">
+              <span>周一10:35</span>
+              <span>提醒！发呆超过15分钟</span>
+            </div>
+            <div class="remind-item">
+              <span>周一14:48</span>
+              <span>休息！学习超过60分钟</span>
+            </div>
+            <div class="remind-item">
+              <span>周一16:27</span>
+              <span>提醒！玩手机超过30分钟</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- 周计划提醒表 -->
-    <div class="plan-section">
-      <button class="plan-btn">今日计划提醒表✓</button>
-      <div class="plan-list">
-        <div class="plan-item">
-          <input type="checkbox" checked>
-          <span>今日 9:00</span>
-          <span>背单词50个</span>
-        </div>
-        <div class="plan-item">
-          <input type="checkbox" checked>
-          <span>今日 10:00</span>
-          <span>看网课</span>
-        </div>
-        <div class="plan-item">
-          <input type="checkbox" checked>
-          <span>今日 13:30</span>
-          <span>复习高数</span>
+      <!-- 周计划提醒表 -->
+      <div class="plan-section">
+        <button class="plan-btn">周计划提醒表✓</button>
+        <div class="plan-list">
+          <div class="plan-item">
+            <input type="checkbox" checked>
+            <span>周一 9:00</span>
+            <span>背单词50个</span>
+          </div>
+          <div class="plan-item">
+            <input type="checkbox" checked>
+            <span>周一 10:00</span>
+            <span>看网课</span>
+          </div>
+          <div class="plan-item">
+            <input type="checkbox" checked>
+            <span>周一 13:30</span>
+            <span>复习高数</span>
+          </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -412,11 +418,11 @@ export default {
 /* 顶部导航栏 */
 .top-nav {
   display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+  background-color: #a5d6a7;
   padding: 10px 0;
-  border-radius: 0 0 12px 12px;
+  <<<<<<< HEAD border-radius: 0 0 12px 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, .1);
+  =======>>>>>>>jyx
 }
 
 .nav-btn {
@@ -426,12 +432,9 @@ export default {
   padding: 8px 0;
   font-size: 16px;
   cursor: pointer;
-  color: #fff;
-  font-weight: 500;
-  transition: background .2s ease;
 }
 
-.back-btn {
+<<<<<<< HEAD .back-btn {
   flex: 0 0 auto;
   width: 36px;
   height: 32px;
@@ -471,306 +474,297 @@ export default {
   border-radius: 4px;
   color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
-}
 
-/* 本周专注度与分类统计行 */
-.stats-row {
-  display: flex;
-  padding: 15px;
-  gap: 15px;
-}
-
-.focus-card {
-  flex: 1;
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.focus-card h3 {
-  margin-top: 0;
-  font-size: 18px;
-}
-
-.circle-chart {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 20px auto;
-}
-
-.circle-bg,
-.circle-progress {
-  fill: none;
-  stroke-width: 10;
-}
-
-.circle-bg {
-  stroke: #f0f0f0;
-}
-
-.circle-progress {
-  stroke: #f5a623;
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: center;
-}
-
-.circle-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.stats-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.stat-item {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.stat-icon {
-  width: 39px;
-  height: 39px;
-  margin-right: 8px;
-}
-
-/* AI分析按钮 */
-.analysis-btn {
-  display: block;
-  width: 90%;
-  margin: 0 auto 15px;
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.report-card {
-  width: 90%;
-  margin: 0 auto 15px;
-  padding: 14px;
-  border-radius: 8px;
-  background-color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  color: #333;
-}
-
-.report-card h1,
-.report-card h2,
-.report-card h3 {
-  margin: 8px 0;
-  color: #2f855a;
-}
-
-.report-card p {
-  line-height: 1.6;
-}
-
-.report-card ul {
-  padding-left: 18px;
-}
-
-.report-card code {
-  background: #f6f8fa;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-.report-card pre {
-  background: #f6f8fa;
-  padding: 8px;
-  border-radius: 6px;
-  overflow: auto;
-}
-
-.report-skeleton {
-  display: grid;
-  gap: 8px;
-}
-
-.report-skeleton .line {
-  height: 10px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #f0f0f0, #e8e8e8, #f0f0f0);
-  animation: shimmer 1.2s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200px 0;
+  =======.nav-btn.active {
+    background-color: #81c784;
+    border-radius: 4px;
+    >>>>>>>jyx
   }
 
-  100% {
-    background-position: 200px 0;
+  /* 本周专注度与分类统计行 */
+  .stats-row {
+    display: flex;
+    padding: 15px;
+    gap: 15px;
   }
-}
 
-/* 姿态监测与提醒记录行 */
-.monitor-row {
-  display: flex;
-  padding: 0 15px 15px;
-  gap: 15px;
-}
+  .focus-card {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
 
-.monitor-card,
-.remind-card {
-  flex: 1;
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+  .focus-card h3 {
+    margin-top: 0;
+    font-size: 18px;
+  }
 
-.monitor-card h4,
-.remind-card h4 {
-  margin-top: 0;
-  font-size: 16px;
-}
+  .circle-chart {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+  }
 
-.bar-chart {
-  margin-top: 15px;
-}
+  .circle-bg,
+  .circle-progress {
+    fill: none;
+    stroke-width: 10;
+  }
 
-.bar-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
+  .circle-bg {
+    stroke: #f0f0f0;
+  }
 
-.bar-item span {
-  width: 50px;
-  display: inline-block;
-  font-size: 14px;
-}
+  .circle-progress {
+    stroke: #f5a623;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
 
-.bar {
-  height: 10px;
-  background-color: #64b5f6;
-  border-radius: 5px;
-}
+  .circle-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+  }
 
-.axis {
-  text-align: right;
-  font-size: 10px;
-  color: #999;
-  margin-top: 5px;
-}
+  .stats-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.remind-list {
-  margin-top: 15px;
-}
+  .stat-item {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-.remind-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-}
+  .stat-icon {
+    width: 39px;
+    height: 39px;
+    margin-right: 8px;
+  }
 
-/* 周计划提醒表 */
-.plan-section {
-  padding: 0 15px 15px;
-}
+  /* AI分析按钮 */
+  .analysis-btn {
+    display: block;
+    width: 90%;
+    margin: 0 auto 15px;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    cursor: pointer;
+  }
 
-.plan-btn {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 16px;
-  cursor: pointer;
-}
+  .report-card {
+    width: 90%;
+    margin: 0 auto 15px;
+    padding: 14px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
 
-.plan-list {
-  margin-top: 10px;
-}
+  .report-card h1,
+  .report-card h2,
+  .report-card h3 {
+    margin: 8px 0;
+    color: #2f855a;
+  }
 
-.plan-item {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  background-color: #fff;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
+  .report-card p {
+    line-height: 1.6;
+  }
 
-.plan-item input {
-  margin-right: 8px;
-}
+  .report-card ul {
+    padding-left: 18px;
+  }
 
-.plan-item span {
-  display: inline-block;
-  width: 100px;
-  font-size: 14px;
-}
+  .report-card code {
+    background: #f6f8fa;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
 
-/* 底部导航 */
-.bottom-nav {
-  display: flex;
-  background-color: #fff;
-  border-top: 1px solid #e0e0e0;
-  padding: 10px 0;
-}
+  .report-card pre {
+    background: #f6f8fa;
+    padding: 8px;
+    border-radius: 6px;
+    overflow: auto;
+  }
 
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
-  cursor: pointer;
-}
+  .report-skeleton {
+    display: grid;
+    gap: 8px;
+  }
 
-.nav-item img {
-  width: 24px;
-  height: 24px;
-  margin-bottom: 2px;
-}
+  .report-skeleton .line {
+    height: 10px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f0f0f0, #e8e8e8, #f0f0f0);
+    animation: shimmer 1.2s infinite;
+  }
 
-.nav-item.active {
-  color: #2196f3;
-}
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
 
-.focus-img {
-  width: 120px;
-  height: 150px;
-  margin: 20px auto;
-  display: block;
-}
+    100% {
+      background-position: 200px 0;
+    }
+  }
 
-.focus-percentage {
-  text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
+  /* 姿态监测与提醒记录行 */
+  .monitor-row {
+    display: flex;
+    padding: 0 15px 15px;
+    gap: 15px;
+  }
 
-.focus-ring {
-  width: 120px;
-  height: 120px;
-  margin: 20px auto;
-}
-</style>
+  .monitor-card,
+  .remind-card {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .monitor-card h4,
+  .remind-card h4 {
+    margin-top: 0;
+    font-size: 16px;
+  }
+
+  .bar-chart {
+    margin-top: 15px;
+  }
+
+  .bar-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .bar-item span {
+    width: 50px;
+    display: inline-block;
+    font-size: 14px;
+  }
+
+  .bar {
+    height: 10px;
+    background-color: #64b5f6;
+    border-radius: 5px;
+  }
+
+  .axis {
+    text-align: right;
+    font-size: 10px;
+    color: #999;
+    margin-top: 5px;
+  }
+
+  .remind-list {
+    margin-top: 15px;
+  }
+
+  .remind-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+  }
+
+  /* 周计划提醒表 */
+  .plan-section {
+    padding: 0 15px 15px;
+  }
+
+  .plan-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .plan-list {
+    margin-top: 10px;
+  }
+
+  .plan-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .plan-item input {
+    margin-right: 8px;
+  }
+
+  .plan-item span {
+    display: inline-block;
+    width: 100px;
+    font-size: 14px;
+  }
+
+  /* 底部导航 */
+  .bottom-nav {
+    display: flex;
+    background-color: #fff;
+    border-top: 1px solid #e0e0e0;
+    padding: 10px 0;
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .nav-item img {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 2px;
+  }
+
+  .nav-item.active {
+    color: #2196f3;
+  }
+
+  .focus-img {
+    width: 120px;
+    height: 150px;
+    margin: 20px auto;
+    display: block;
+  }</style>

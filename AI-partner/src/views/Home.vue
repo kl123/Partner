@@ -49,7 +49,7 @@
           <img class="icon-wordbook" src="../assets/2.png" alt="单词宝典" />
           <span>监测中心</span>
         </div>
-        <div class="function-item" @click="into('question')">
+        <div class="function-item">
           <img class="icon-qa" src="../assets/3.png" alt="智能答疑" />
           <span>智能答疑</span>
         </div>

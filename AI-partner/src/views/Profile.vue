@@ -5,26 +5,35 @@
       <!-- 用户卡片 -->
       <a-card class="user-card">
         <div class="user-header">
-          <a-avatar :size="64" :src="user.avatar" />
           <div class="user-info">
-            <h3>{{ user.name }}</h3>
+            <h3>嗨~{{ user.name }}</h3>
+            <h6>让我们一起学习吧！</h6>
             <p>
               学号: {{ user.studentId }}
               <a-tag @click="copyId" color="blue" style="cursor: pointer">复制</a-tag>
             </p>
           </div>
+          <a-avatar :size="64" :src="user.avatar" />
         </div>
-        <div class="stats">
-          <div class="stat-item">
-            <h4>{{ stats.courses }}</h4>
-            <p>已学课程</p>
-          </div>
-          <div class="stat-item">
-            <h4>{{ stats.words }}</h4>
-            <p>单词本</p>
-          </div>
+        <div class="stats-time">
+          <h3>今日学习</h3>
+          <h4>30分钟</h4>
+          <p>/60分钟</p>
+          <img src="/src/assets/进度条.png" />
         </div>
       </a-card>
+
+      <div class="stats">
+        <div class="stat-item1">
+          <p>已学课程</p>
+          <h4>{{ stats.courses }}</h4>
+          <img src="/src/assets/已学.png" />
+        </div>
+        <div class="stat-item2">
+          <p>单词本</p>
+          <h4>{{ stats.words }}</h4>
+        </div>
+      </div>
 
       <!-- 快捷入口 -->
       <a-list class="quick-actions" :data-source="actions" header="快捷入口">
@@ -234,7 +243,7 @@ onMounted(() => {
 <style scoped>
 .learning-dashboard {
   width: 100vw;
-  background-color: #ececec;
+  background-color: #ffffff;
   color: white;
   overflow: hidden;
   display: flex;
@@ -246,7 +255,6 @@ onMounted(() => {
   padding: 20px;
   box-sizing: border-box;
   overflow-y: auto;
-  border-bottom: 1px solid #333; /* 修改为底部边框 */
 }
 
 .right-section {
@@ -266,13 +274,14 @@ onMounted(() => {
 .user-card {
   background: linear-gradient(135deg, #67c23a 0%, #b3e19d 100%); /* 绿色渐变 */
   color: white;
+  position: relative;
 }
 
 .user-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 60px;
+  margin-bottom: 10px;
 }
 
 .user-info h3 {
@@ -286,26 +295,107 @@ onMounted(() => {
   opacity: 0.9;
 }
 
+.stats-time{
+  width: 95%;
+  height: 100px;
+  background: #ffffff;
+  color: #000;
+  padding: 15px;
+  margin: auto;
+  border-radius: 10px;
+  position: absolute;
+  top: 100px;           /* 向上偏移，覆盖到 card 顶部 */
+  left: 50%;
+  transform: translateX(-50%); /* 水平居中 */
+  z-index: 10;          /* 确保在 card 上方 */
+  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2);
+}
+
+.stats-time h3{
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #858181;
+}
+
+.stats-time img {
+  width: 200px;        /* 固定宽度 */
+  height: auto;        /* 保持原始宽高比 */
+  position: absolute;
+  bottom: 15px;       /* 距离底部 15px（等于 padding 值，可调） */
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stats-time h4 {
+  font-size: 1.2em;
+  position: absolute;
+  top: 25px; /* 距离顶部的距离，根据需要调整 */
+  right: 75px; /* 距离右边界的距离，根据需要调整 */
+  margin: 0;
+}
+
+.stats-time p {
+  color: #858181;
+  position: absolute;
+  top: 18px; /* 距离顶部的距离，根据需要调整 */
+  right: 20px; /* 距离右边界的距离，根据需要调整 */
+  margin: 0;
+}
+
 .stats {
   display: flex;
   justify-content: space-around;
-  text-align: center;
   background: rgba(255, 255, 255, 0.15);
-  padding: 16px;
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 76px;
+}
+
+.stat-item1{
+  height: 100px;
+  width: 80%;
   border-radius: 8px;
-}
-
-.stat-item h4 {
-  margin: 0;
-  font-size: 1.4em;
+  background: #39ba66;
+  margin-right: 20px;
+  padding: 15px;
   font-weight: bold;
+  position: relative;
+}
+.stat-item2{
+  height: 100px;
+  width: 30%;
+  border-radius: 8px;
+  background: #a0c98c;
+  padding: 10px;
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  position: relative;
 }
 
-.stat-item p {
-  margin: 4px 0 0 0;
-  font-size: 0.9em;
-  opacity: 0.9;
+.stat-item1 h4{
+  margin: 0;
+  font-size: 1.8em;
+  font-weight: bold;
+  position: absolute;
+  left: 30px;
+  bottom: 15px;
+  margin: 0;
 }
+.stat-item2 h4{
+  margin: 0;
+  font-size: 1.8em;
+  font-weight: bold;
+  position: absolute;
+  bottom: 15px;
+}
+
+.stat-item1 img {
+  position: absolute;
+  bottom: 5px;       /* 距离底部 15px（等于 padding 值，可调） */
+  right: 5px;
+}
+
 
 /* 图表卡片 */
 .chart-card {
@@ -315,9 +405,10 @@ onMounted(() => {
   height: 34vh;
   overflow: hidden;
   padding: 0;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), /* 阴影效果 */
-              0px 2px 4px rgba(0, 0, 0, 0.06); /* 更柔和的额外阴影 */
-  margin-bottom: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2),
+              0 4px 8px rgba(0, 0, 0, 0.12);
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .chart-container {
@@ -331,15 +422,16 @@ onMounted(() => {
   color: white;
   font-weight: bold;
   background: none;
-  padding: 0 0 10px 0;
+  padding: 0 0 0 0;
 }
 
 .quick-actions :deep(.ant-list-item) {
-  padding: 12px 16px;
+  padding: 5px 16px;
   border-bottom: 1px solid #333;
 }
 
 .quick-actions :deep(.ant-list-item-meta-title) {
   color: #67c23a; /* 图标颜色 */
+  font-weight: bold;
 }
 </style>

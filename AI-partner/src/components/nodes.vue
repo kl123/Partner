@@ -4,37 +4,49 @@
     <div class="outer-card">
       <!-- 顶部学习卡片（背景改为淡蓝色） -->
       <div class="top-card">
-        <h2>{{route.query.subject}} <span class="difficulty">难度: ★★★</span></h2>
+        <h2>English <span class="difficulty">难度: ★★★</span></h2>
         <div class="time-progress">
           <p>剩余时间: 20min</p>
           <div class="progress-circle">
-            <a-progress type="circle" :percent="courseFromStorage.progress*100" :size="80" :stroke-width="12" stroke-color="#7bb7d7" style="margin-right: 20px;"/>
+            <div class="progress-bg"></div>
+            <div class="progress-fill" style="width: 70%"></div>
+            <span class="progress-text">70%</span>
           </div>
         </div>
-        <p class="description">说明:{{courseFromStorage.description}}</p>
+        <p class="description">说明: 英语学习锻炼听说读写译能力，通过扩大词汇量，了解英语语法，锻炼听说能力的方法，来提高英语能力...</p>
       </div>
     </div>
 
     <!-- 听力和单词模块的总背景卡片 -->
     <div class="modules-container">
       <!-- 英语听力模块 -->
-      <div class="module blue" v-for="item in timelineItems">
-        <h3>{{item.display_name}}</h3>
-        <a-progress stroke-linecap="square" :percent="item.proficiency*100" :size="6" :stroke-width="6" stroke-color="#417bbd"/>
-        <p>
-          难度:<a-rate :value="item.difficulty" />
-        </p>
+      <div class="module blue">
+        <h3>英语听力</h3>
         <ul class="task-list">
-          <li>
-            <input type="radio" disabled>
-            <span>计划时间{{item.day_num}}</span>
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>Dictation</span>
           </li>
           <li>
             <input type="radio" disabled>
-            <span>{{item.description}}</span>
+            <span>长对语文本2篇</span>
           </li>
         </ul>
-        <button style="border-radius: 20px; background-color: #4f90d4;border: none;padding: 10px" @click="handleStart(item)">开始学习</button>
+      </div>
+
+      <!-- 英语单词模块 -->
+      <div class="module light-blue">
+        <h3>英语单词</h3>
+        <ul class="task-list">
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>学习50个新单词</span>
+          </li>
+          <li class="completed">
+            <input type="checkbox" checked disabled>
+            <span>复习50个单词</span>
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -45,104 +57,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref,onMounted,watch } from "vue"
-import { LeftOutlined, CheckCircleOutlined,MinusCircleOutlined } from '@ant-design/icons-vue';
-import { getNodes } from "@/api/Study"
-import { Typography, Timeline, Card, Button } from 'ant-design-vue';
-import { useRouter,useRoute } from 'vue-router'
-
-const router = useRouter()
-const route = useRoute()
-const showStatus = ref(true)
-const courseFromStorage = ref({ description: '加载中...' });
-// 注册组件
-const ATypographyTitle = Typography.Title;
-const ATimeline = Timeline;
-const ATimelineItem = Timeline.Item;
-const ACard = Card;
-const AButton = Button;
-const subject = route.query.subject
-onMounted(async () => {
-  // 1. 立即恢复本地存储的课程信息
-  const stored = localStorage.getItem('course');
-  if (stored) {
-    try {
-      courseFromStorage.value = JSON.parse(stored);
-    } catch (e) {
-      console.error('解析 course 失败');
-    }
-  }
-
-  // 2. 加载学习路径列表（不影响顶部显示）
-  await requestNode();
-});
-// 学习路径数据（增强版）
-const timelineItems = ref([
-  {
-    display_name: '路径1：离散数学',
-    difficulty: 2,
-    difficultyText: '中等',
-    proficiency:0.5,
-    dayNum: 10,
-    description: '学习集合、逻辑、图论等基础数学知识，为算法打下坚实基础。',
-  },
-  {
-    display_name: '路径2：数据结构与算法',
-    difficulty: 3,
-    difficultyText: '困难',
-    proficiency:0.3,
-    dayNum: 21,
-    description: '掌握数组、链表、栈、队列、树、图等结构及常见算法实现。',
-  },
-  {
-    display_name: '路径3：前端开发入门',
-    difficulty: 1,
-    difficultyText: '简单',
-    dayNum: 14,
-    proficiency:1,
-    description: '学习 HTML、CSS、JavaScript 和 Vue 基础，完成静态页面开发。',
-  },
-  {
-    display_name: '路径4：算法进阶实战',
-    difficulty: 3,
-    difficultyText: '困难',
-    dayNum: 30,
-    description: '深入动态规划、贪心、回溯等高级算法，结合 LeetCode 实战训练。',
-  },
-]);
-
-
-
-//获取学习路径上的知识点
-const requestNode = async() => {
-  const id = route.query.pathId
-  const res = await getNodes(id)
-  console.log(res);
-  timelineItems.value = res.data
-}
-
-// 模拟点击“进入学习”
-const handleStart = (item) => {
-  console.log('🚀 开始学习:', item.display_name);
-  showStatus.value = false
-  // 这里可以跳转页面，比如：
-  router.push({
-    name:"video",
-    query:{
-    title:item.display_name
-  }
-})
-    //进行本地存储
-    localStorage.setItem('pathId', item.pathId)
-    localStorage.setItem('concept_id', item.conceptId)
-    localStorage.setItem('progress', item.proficiency)
-};
-const goBack = () =>{
-  showStatus.value = true
-}
-</script>
 
 <style scoped>
 /* 背景改为蓝色→白色→蓝色的垂直渐变 */

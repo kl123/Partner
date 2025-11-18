@@ -23,7 +23,6 @@ const routes = [
   { path: '/allai', component: () => import('@/views/allai.vue'), name: 'allai' },
   {path: '/ins', component: () => import('@/views/ins.vue'), name: 'ins' },
   {path: '/focus', component: () => import('@/views/focus.vue'), name: 'focus' },
-  {path: '/monitor', component: () => import('@/views/monitor.vue'), name: 'monitor' },
   {path: '/camera', component: () => import('@/views/camera.vue'), name: 'camera' },
   {path: '/question', component: () => import('@/views/CozeWeb.vue'), name: 'question' },
   {path: '/testgo', component: () => import('@/views/testgo.vue'), name: 'testgo' },
