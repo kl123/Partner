@@ -35,19 +35,19 @@
     <!-- 功能卡片区域（浅紫到白色渐变） -->
     <section class="function-section">
       <div class="function-cards">
-        <div class="function-card" @click="handleFunctionClick('制定今日计划')">
-          <h3>制定今日计划</h3>
-          <p>今天准备学什么呢？不知道的话，问问AI小助手吧~</p>
+        <div class="function-card" @click="router.push('/ai')">
+          <h3>AI语音助手</h3>
+          <p>不知道今天学什么？喊AI小助手帮你规划学习，高效开启一天～</p>
           <img src="../assets/计划.png" alt="制定计划" class="card-icon" />
         </div>
         <div class="function-card" @click="handleFunctionClick('寻找写作灵感')">
-          <h3>寻找写作灵感</h3>
-          <p>AI小助手为你提供全新视角的写作灵感，让作文锦上添花。</p>
+          <h3>灵感补给站</h3>
+          <p>作文没思路？AI小助手解锁多元创作视角，让文字更有亮点～</p>
           <img src="../assets/书写.png" alt="写作灵感" class="card-icon1" />
         </div>
-        <div class="function-card" @click="handleFunctionClick('有译英语词典')">
-          <h3>有译英语词典</h3>
-          <p>英语单词不认识？别担心，AI小助手来帮你快速消灭生词。</p>
+        <div class="function-card" @click="router.push('/error')">
+          <h3>智能错题集</h3>
+          <p>遇到生词卡壳？AI小助手帮你精准攻克，快速扫清英语障碍～</p>
           <img src="../assets/字典.png" alt="英语词典" class="card-icon2" />
         </div>
         <div class="function-card" @click="handleFunctionClick('更多功能')">
@@ -59,27 +59,38 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AssistantPage',
-  data() {
-    return {
-      // 可根据实际需求添加数据（如交互状态、动态内容等）
-    }
-  },
-  methods: {
-    // 学科卡片点击事件
-    handleSubjectClick(subject) {
-      console.log(`选择了${subject}学科`);
-      // 可添加学科相关功能逻辑
-    },
-    // 功能卡片点击事件
-    handleFunctionClick(funcName) {
-      console.log(`点击了${funcName}功能`);
-      // 可添加对应功能逻辑
-    }
-  }
+<script setup>
+import { useRouter } from 'vue-router' // 如需路由跳转可导入（可选）
+
+// 路由实例（如果需要跳转页面，取消注释即可使用）
+const router = useRouter()
+
+/**
+ * 学科卡片点击事件
+ * @param {string} subject - 选中的学科名称
+ */
+const handleSubjectClick = (subject) => {
+  console.log(`选择了${subject}学科`);
+  // 可添加学科相关功能逻辑（如路由跳转、数据请求等）
+  // 示例：跳转到对应学科页面（需路由配置支持）
+  // router.push(`/subject/${subject}`)
 }
+
+/**
+ * 功能卡片点击事件
+ * @param {string} funcName - 点击的功能名称
+ */
+const handleFunctionClick = (funcName) => {
+  console.log(`点击了${funcName}功能`);
+  // 可添加对应功能逻辑（如之前的路由跳转需求）
+  // 示例：跳转到 name 为 ai 的页面（根据你之前的需求）
+  // if (funcName === 'AI功能') {
+  //   router.push({ name: 'ai' }) // 命名路由跳转
+  //   // 或直接路径跳转：router.push('/ai')
+  // }
+}
+
+
 </script>
 
 <style scoped>
