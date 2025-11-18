@@ -25,6 +25,8 @@ const routes = [
   {path: '/focus', component: () => import('@/views/focus.vue'), name: 'focus' },
   {path: '/monitor', component: () => import('@/views/monitor.vue'), name: 'monitor' },
   {path: '/camera', component: () => import('@/views/camera.vue'), name: 'camera' },
+  {path: '/question', component: () => import('@/views/CozeWeb.vue'), name: 'question' },
+  {path: '/testgo', component: () => import('@/views/testgo.vue'), name: 'testgo' },
 ]
 
 export const router = createRouter({

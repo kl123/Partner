@@ -1,8 +1,8 @@
 <template>
-  <div class="page">
-  <!-- 只在 AI 页面加载 CozeChatBot -->
-  <CozeChatBot v-if="route.path === '/ai'" />
-</div>
+  <div class="head">
+    <component is="LeftOutlined" @click="router.back()"/>
+    <component is="EllipsisOutlined" />
+  </div>
   <div class="main">
     <router-view/>
   </div>
@@ -24,7 +24,7 @@
 <script setup>
 import { ref ,computed} from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { HomeOutlined, NodeIndexOutlined, AliwangwangOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import { HomeOutlined, NodeIndexOutlined, AliwangwangOutlined, TeamOutlined ,LeftOutlined,EllipsisOutlined} from '@ant-design/icons-vue'
 import CozeChatBot from '@/components/CozeChatBot.vue'
 
 const router = useRouter()
@@ -42,7 +42,7 @@ const tabs = [
 const activeKey = ref('home') // 默认首页激活
 
 // 计算属性：判断当前是否为登录页
-const isLoginRoute = computed(() => route.path === '/login'||route.path === '/404')
+const isLoginRoute = computed(() => route.path === '/login'||route.path === '/404'||route.path === '/question')
 
 // 点击切换 tab
 const onTabClick = (key,path) => {
@@ -55,16 +55,15 @@ const onTabClick = (key,path) => {
 .main {
   width: 100vw;
   height: calc(100vh - 10vh);
-  /* background-color: aqua; */
-  overflow: auto;
-  background: linear-gradient(
-    to bottom, 
-    #7769d3 0%,   /* 渐变起始颜色 */
-    #fbfbfd 20%,  /* 渐变结束颜色和位置，这里设为20%，意味着渐变效果占据高度的1/5 */
-    #ffffff 20%   /* 纯白色从20%开始，直到100% */
-  );
 }
-
+.head{
+  height: 5vh;
+  width: 100vw;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
 .bottom {
   position: fixed;
   bottom: 0;
