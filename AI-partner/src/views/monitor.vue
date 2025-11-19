@@ -21,6 +21,7 @@
         <template #renderItem="{ item }">
           <a-list-item class="record-item" @click="enterFocus(item)">
             <a-list-item-meta :title="`设备 ${item.devId}`" :description="`总时长 ${formatHours(item.totalTime)}`" />
+            <div class="start-time">开始时间：{{ item.startTime || '—' }}</div>
             <div class="metrics">
               <div class="metric"><span>学习</span><span>{{ item.studyTime }}</span><a-tag color="blue">{{
                 toPercent(item.studyRatio) }}</a-tag></div>
@@ -312,6 +313,12 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+
+.start-time {
+  margin: 4px 0 8px;
+  color: #666;
+  font-size: 13px;
 }
 
 .metric {

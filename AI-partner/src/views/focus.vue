@@ -35,7 +35,12 @@
     </div>
 
     <!--、 AI助手报告分析按钮 -->
-    <button class="analysis-btn">AI助手报告分析</button>
+    <button v-if="!reportHtml" class="analysis-btn" :disabled="listening" @click="startReportListener">
+      {{ listening ? '正在获取…' : '获取学习报告' }}
+    </button>
+    <div v-if="reportHtml" class="report-card">
+      <div v-html="reportHtml"></div>
+    </div>
 
     <!-- 姿态监测与提醒记录 -->
     <div class="monitor-row">
@@ -110,19 +115,29 @@
 
 <script>
 import * as echarts from 'echarts'
+import { message } from 'ant-design-vue'
 export default {
   data() {
     return {
       tab: 'day',
       title: '日数据',
-      perc: { sleep: 0, study: 0, focus: 0, walk: 0, phone: 0, idle: 0, distraction: 0 }
+      perc: { sleep: 0, study: 0, focus: 0, walk: 0, phone: 0, idle: 0, distraction: 0 },
+      listening: false,
+      reportMarkdown: '',
+      reportHtml: '',
+      reportSource: null,
+      reportGot: false,
+      listenTimer: null,
+      pollTimer: null,
+      postController: null,
+      streamBuf: ''
     };
   },
   mounted() {
     const q = this.$route.query || {};
     const fmt = (d) => {
       const pad = n => (n < 10 ? '0' : '') + n;
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
     this.title = q.startTime ? `学习数据 · ${fmt(new Date(q.startTime))}` : '学习数据';
     const parseMin = (s) => {
@@ -184,7 +199,204 @@ export default {
       };
       chart.setOption(option);
     };
-    this.$nextTick(() => mountRing());
+    this.$nextTick(() => { mountRing(); this.initReport(); });
+  }
+  , methods: {
+    appendStreamText(text) {
+      try {
+        const obj = JSON.parse(text);
+        if (obj && typeof obj === 'object') {
+          if (typeof obj.delta === 'string') text = obj.delta;
+          else if (typeof obj.text === 'string') text = obj.text;
+          else if (typeof obj.data === 'string') text = obj.data;
+        }
+      } catch (_) { }
+      const s = String(text).replace(/\r/g, '\n');
+      this.streamBuf += s;
+      const flushIdx = this.streamBuf.lastIndexOf('\n\n');
+      if (flushIdx >= 0) {
+        const head = this.streamBuf.slice(0, flushIdx + 2);
+        const tail = this.streamBuf.slice(flushIdx + 2);
+        this.reportMarkdown += head;
+        this.streamBuf = tail;
+      }
+      this.reportHtml = this.mdToHtml(this.reportMarkdown + this.streamBuf);
+    },
+    formatStartTime(s) {
+      const str = String(s || '').trim()
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(str)) return str
+      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(str)) return str + ':00'
+      const d = new Date(str)
+      if (!isNaN(d.getTime())) {
+        const pad = (n) => (n < 10 ? '0' : '') + n
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+      }
+      return str
+    },
+    async initReport() {
+      const q = this.$route.query || {};
+      const devId = String(q.devId || '').trim();
+      const startTime = this.formatStartTime(q.startTime || '');
+      if (!devId || !startTime) return;
+      try {
+        const res = await fetch(`http://192.168.5.35:8085/modelCall/MarkdownByKey?dev_id=${encodeURIComponent(devId)}&start_time=${encodeURIComponent(startTime)}`);
+        const data = await res.json();
+        if (data && data.code === 200 && typeof data.data === 'string' && data.data.trim() !== '') {
+          this.reportMarkdown = data.data;
+          this.reportHtml = this.mdToHtml(this.reportMarkdown);
+          this.listening = false;
+          return;
+        }
+      } catch (e) { }
+      this.startReportListener();
+    },
+    startReportListener() {
+      if (this.listening) return;
+      const q = this.$route.query || {};
+      const devId = String(q.devId || '').trim();
+      const startTime = this.formatStartTime(q.startTime || '');
+      if (!devId || !startTime) { this.listening = false; return; }
+      this.listening = true;
+      this.reportMarkdown = '';
+      this.reportHtml = '';
+      this.reportGot = false;
+      if (this.listenTimer) { try { clearTimeout(this.listenTimer) } catch (e) { } this.listenTimer = null }
+      const params = new URLSearchParams({ dev_id: devId, start_time: startTime });
+      const url = `http://192.168.5.35:8085/modelCall/LANStreamGet?${params.toString()}`;
+      try {
+        const es = new EventSource(url);
+        this.reportSource = es;
+        this.listenTimer = setTimeout(() => {
+          if (!this.reportGot) {
+            try { this.reportSource && this.reportSource.close() } catch (_) { }
+            this.listening = false;
+            message.info('暂未生成学习报告，请稍后重试');
+          }
+        }, 10000);
+        es.onmessage = (e) => {
+          const text = e?.data || '';
+          if (!text) return;
+          this.reportGot = true;
+          if (this.listenTimer) { try { clearTimeout(this.listenTimer) } catch (_) { } this.listenTimer = null }
+          if (text === '[DONE]') { try { es.close(); } catch (_) { } this.listening = false; return; }
+          this.appendStreamText(text);
+        };
+        es.onerror = () => {
+          try { es.close(); } catch (_) { }
+          this.listening = false;
+          if (this.listenTimer) { try { clearTimeout(this.listenTimer) } catch (_) { } this.listenTimer = null }
+          if (!this.reportHtml) this.startPollMarkdown(devId, startTime);
+        };
+      } catch (e) {
+        this.listening = false;
+        if (!this.reportHtml) this.startPollMarkdown(devId, startTime);
+      }
+    },
+    mdToHtml(md) {
+      const esc = (s) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const inline = (t) => esc(t)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+      const lines = String(md).split(/\r?\n/);
+      let html = '';
+      let inCode = false; let codeBuf = []; let listBuf = []; let paraBuf = '';
+      const flushList = () => { if (listBuf.length) { html += '<ul>' + listBuf.map(li => `<li>${li}</li>`).join('') + '</ul>'; listBuf = []; } };
+      const flushCode = () => { if (inCode) { html += `<pre><code>${esc(codeBuf.join('\n'))}</code></pre>`; inCode = false; codeBuf = []; } };
+      const flushPara = () => { if (paraBuf.trim() !== '') { html += `<p>${inline(paraBuf)}</p>`; paraBuf = ''; } };
+      for (let raw of lines) {
+        const s = raw; // 保留原始行内容
+        if (s.startsWith('```')) { if (!inCode) { flushPara(); flushList(); inCode = true; } else { flushCode(); } continue; }
+        if (inCode) { codeBuf.push(raw); continue; }
+        const m = s.match(/^(#{1,6})\s+(.*)$/);
+        if (m) { flushPara(); flushList(); const lvl = m[1].length; html += `<h${lvl}>${inline(m[2])}</h${lvl}>`; continue; }
+        if (/^[-*]\s+/.test(s)) { flushPara(); listBuf.push(inline(s.replace(/^[-*]\s+/, ''))); continue; }
+        if (s.trim() === '') { flushList(); flushPara(); continue; }
+        paraBuf = paraBuf ? paraBuf + s : s;
+      }
+      flushList(); flushCode(); flushPara();
+      return html;
+    },
+    async startPostStream(devId, startTime) {
+      try { this.postController && this.postController.abort() } catch (_) { }
+      const base = 'http://192.168.5.35:8085/modelCall/LANStreamReport'
+      const controller = new AbortController()
+      this.postController = controller
+      const startTs = Date.now()
+      const readStream = async (res) => {
+        if (!res || !res.body) return false
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder('utf-8')
+        let buffer = ''
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop() || ''
+          for (const part of parts) {
+            const lines = part.split('\n')
+            const datas = lines.filter(l => l.startsWith('data:')).map(l => l.replace(/^data:\s?/, ''))
+            let text = datas.length ? datas.join('\n') : part
+            if (!text) continue
+            this.reportGot = true
+            if (text === '[DONE]') { try { controller.abort() } catch (_) { } return true }
+            this.appendStreamText(text)
+          }
+        }
+        return true
+      }
+      const attempts = [
+        { url: base, init: { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' }, body: JSON.stringify({ dev_id: devId, start_time: this.formatStartTime(startTime) }), signal: controller.signal } },
+        { url: base, init: { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'text/event-stream' }, body: new URLSearchParams({ dev_id: devId, start_time: this.formatStartTime(startTime) }).toString(), signal: controller.signal } }
+      ]
+      let ok = false
+      for (const a of attempts) {
+        try {
+          const res = await fetch(a.url, a.init)
+          if (res.status === 422 || res.status === 405) { continue }
+          ok = await readStream(res)
+          if (ok) break
+        } catch (_) { continue }
+      }
+      if (!ok) {
+        if (!this.reportHtml) this.startPollMarkdown(devId, startTime)
+      }
+      if (!this.reportGot && Date.now() - startTs >= 10000) {
+        this.listening = false
+        message.info('暂未生成学习报告，请稍后重试')
+      }
+    },
+    startPollMarkdown(devId, startTime) {
+      if (this.pollTimer) { try { clearInterval(this.pollTimer) } catch (e) { } this.pollTimer = null }
+      const startedAt = Date.now();
+      this.pollTimer = setInterval(async () => {
+        try {
+          const st = this.formatStartTime(startTime)
+          const res = await fetch(`http://192.168.5.35:8085/modelCall/MarkdownByKey?dev_id=${encodeURIComponent(devId)}&start_time=${encodeURIComponent(st)}`);
+          const data = await res.json();
+          if (data && data.code === 200 && typeof data.data === 'string' && data.data.trim() !== '') {
+            this.reportMarkdown = data.data;
+            this.reportHtml = this.mdToHtml(this.reportMarkdown);
+            try { clearInterval(this.pollTimer) } catch (_) { }
+            this.pollTimer = null;
+            this.listening = false;
+          }
+        } catch (_) { }
+        if (!this.reportHtml && Date.now() - startedAt >= 10000) {
+          try { clearInterval(this.pollTimer) } catch (_) { }
+          this.pollTimer = null;
+          this.listening = false;
+          message.info('暂未生成学习报告，请稍后重试');
+        }
+      }, 2000);
+    }
+  },
+  unmounted() {
+    try { this.reportSource && this.reportSource.close() } catch (e) { }
+    if (this.listenTimer) { try { clearTimeout(this.listenTimer) } catch (e) { } this.listenTimer = null }
+    if (this.pollTimer) { try { clearInterval(this.pollTimer) } catch (e) { } this.pollTimer = null }
+    try { this.postController && this.postController.abort() } catch (e) { }
   }
 };
 </script>
@@ -204,7 +416,7 @@ export default {
   background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
   padding: 10px 0;
   border-radius: 0 0 12px 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .1);
 }
 
 .nav-btn {
@@ -218,6 +430,7 @@ export default {
   font-weight: 500;
   transition: background .2s ease;
 }
+
 .back-btn {
   flex: 0 0 auto;
   width: 36px;
@@ -225,22 +438,39 @@ export default {
   padding: 0;
   margin-left: 12px;
   margin-right: 12px;
-  background: rgba(255,255,255,.15);
+  background: rgba(255, 255, 255, .15);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.back-btn svg { width: 14px; height: 14px; fill: #fff; }
 
-.nav-title { flex: 1; text-align: center; color: #fff; font-weight: 600; font-size: 16px; }
-.nav-spacer { flex: 0 0 auto; width: 36px; height: 32px; margin-right: 12px; }
+.back-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: #fff;
+}
+
+.nav-title {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.nav-spacer {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 32px;
+  margin-right: 12px;
+}
 
 .nav-btn.active {
   background-color: #81c784;
   border-radius: 4px;
   color: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
 }
 
 /* 本周专注度与分类统计行 */
@@ -331,6 +561,66 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   font-size: 16px;
   cursor: pointer;
+}
+
+.report-card {
+  width: 90%;
+  margin: 0 auto 15px;
+  padding: 14px;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.report-card h1,
+.report-card h2,
+.report-card h3 {
+  margin: 8px 0;
+  color: #2f855a;
+}
+
+.report-card p {
+  line-height: 1.6;
+}
+
+.report-card ul {
+  padding-left: 18px;
+}
+
+.report-card code {
+  background: #f6f8fa;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.report-card pre {
+  background: #f6f8fa;
+  padding: 8px;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.report-skeleton {
+  display: grid;
+  gap: 8px;
+}
+
+.report-skeleton .line {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f0f0, #e8e8e8, #f0f0f0);
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: 200px 0;
+  }
 }
 
 /* 姿态监测与提醒记录行 */
