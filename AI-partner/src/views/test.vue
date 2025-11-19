@@ -75,7 +75,7 @@
       
       <button @click="validateAndGenerate" :disabled="loading" class="generate-btn primary-btn">
         <span v-if="loading" class="btn-loading">⏳</span>
-        {{ loading ? '生成中...' : '🚀 生成题目' }}
+        {{ loading ? '生成中...' : '生成题目' }}
       </button>
 
       <div v-if="!isFormValid" class="form-hint bg-box">
@@ -255,13 +255,11 @@ export default {
           questions = this.generateMockQuestions();
         }
 
+        // ✅ 关键：存储到 localStorage
+        this.saveToLocalStorage(questions);
         // 路由传参优化（使用params避免URL暴露）
         this.$router.push({
-          name: 'testgo',
-          params: {
-            questions: questions,
-            configData: this.configData
-          }
+          name: 'testgo'
         });
 
       } catch (error) {
@@ -271,17 +269,35 @@ export default {
           this.error = '';
         }, 3000);
         const questions = this.generateMockQuestions();
+        console.log('使用模拟题目:', questions);
+        console.log('geshi:', typeof questions);
+        // 即使出错也生成模拟题目并存储
+        this.saveToLocalStorage(questions);
         this.$router.push({
-          name: 'TestGo',
-          params: {
-            questions: questions,
-            configData: this.configData
-          }
+          name: 'testgo'
         });
       } finally {
         this.loading = false;
       }
     },
+
+saveToLocalStorage(questions) {
+    try {
+      // 存储题目数据
+      localStorage.setItem('testQuestions', JSON.stringify(questions));
+      // 存储配置数据
+      localStorage.setItem('testConfig', JSON.stringify(this.configData));
+      // 存储时间戳，用于数据验证
+      localStorage.setItem('testTimestamp', Date.now().toString());
+      
+      console.log('✅ 数据已保存到本地存储');
+      console.log('题目数量:', questions.length);
+      console.log('配置:', this.configData);
+    } catch (error) {
+      console.error('存储数据失败:', error);
+    }
+  },
+
 
     generateMockQuestions() {
       const mockQuestions = [];
