@@ -200,19 +200,7 @@ import { adderror } from '@/api_py/add';
 import { getquestionanswer } from '@/api_py/add';
 
 export default {
-  name: 'SingleQuestionTest',
-  props: {
-    customQuestions: {
-      type: Array,
-      required: false,
-      default: () => []
-    },
-    customConfig: {
-      type: Object,
-      required: false,
-      default: () => {}
-    }
-  },
+  name: 'testgo',
   data() {
     return {
       errorMsg: '',
@@ -263,11 +251,82 @@ export default {
   },
   mounted() {
     this.initializeQuestions();
+    console.log('Loaded Questions:', this.questionList);
+    console.log('Loaded Config:', this.testConfig);
   },
   methods: {
     initializeQuestions() {
-      // 初始化题目数据
-      const defaultQuestions = [
+      console.log('=== 开始从本地存储加载数据 ===');
+      
+      // 从 localStorage 读取数据
+      const storedQuestions = localStorage.getItem('testQuestions');
+      const storedConfig = localStorage.getItem('testConfig');
+      
+      console.log('存储的题目数据:', storedQuestions ? '存在' : '不存在');
+      console.log('存储的配置数据:', storedConfig ? '存在' : '不存在');
+
+      let questions = [];
+      let config = {};
+
+      // 解析题目数据
+      if (storedQuestions) {
+        try {
+          questions = JSON.parse(storedQuestions);
+          console.log('✅ 成功读取题目数据，数量:', questions.length);
+          console.log('题目详情:', questions);
+        } catch (error) {
+          console.error('❌ 解析题目数据失败:', error);
+          questions = this.getDefaultQuestions();
+        }
+      } else {
+        console.warn('❌ 未找到题目数据，使用默认题目');
+        questions = this.getDefaultQuestions();
+      }
+
+      // 解析配置数据
+      if (storedConfig) {
+        try {
+          config = JSON.parse(storedConfig);
+          console.log('✅ 成功读取配置数据:', config);
+        } catch (error) {
+          console.error('❌ 解析配置数据失败:', error);
+        }
+      } else {
+        console.warn('❌ 未找到配置数据，使用默认配置');
+      }
+
+      // 更新数据
+      this.questionList = questions;
+      this.testConfig = { 
+        ...this.testConfig, 
+        ...config 
+      };
+      this.testConfig.total = this.questionList.length;
+
+      console.log('最终数据:');
+      console.log('题目列表:', this.questionList);
+      console.log('测试配置:', this.testConfig);
+      console.log('题目总数:', this.testConfig.total);
+
+      // 清理存储的数据（避免重复使用）
+      this.clearStoredData();
+    },
+
+    // 清理存储的数据
+    clearStoredData() {
+      try {
+        localStorage.removeItem('testQuestions');
+        localStorage.removeItem('testConfig');
+        localStorage.removeItem('testTimestamp');
+        console.log('✅ 已清理本地存储的数据');
+      } catch (error) {
+        console.error('清理存储数据失败:', error);
+      }
+    },
+
+    // 获取默认题目（备用）
+    getDefaultQuestions() {
+      return [
         {
           id: 'q1',
           type: 'choice',
@@ -331,23 +390,11 @@ export default {
           isCorrect: false
         }
       ];
-
-      // 使用自定义题目或默认题目
-      if (this.customQuestions && this.customQuestions.length > 0) {
-        this.questionList = JSON.parse(JSON.stringify(this.customQuestions));
-      } else {
-        this.questionList = JSON.parse(JSON.stringify(defaultQuestions));
-      }
-
-      // 更新配置
-      if (this.customConfig && Object.keys(this.customConfig).length > 0) {
-        this.testConfig = { ...this.testConfig, ...this.customConfig };
-      }
-      
-      this.testConfig.total = this.questionList.length;
     },
 
     goBack() {
+      // 清理数据后再返回
+      this.clearStoredData();
       this.$router.push({ name: 'test' });
     },
 

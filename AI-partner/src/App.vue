@@ -1,9 +1,10 @@
 <template>
   <div class="head">
     <component is="LeftOutlined" @click="router.back()"/>
+    <p>智能AI学习搭子</p>
     <component is="EllipsisOutlined" />
   </div>
-  <div class="main">
+  <div class="main" :style="{ height: isLoginRoute ? 'calc(100vh)' : 'calc(100vh - 15vh)' }">
     <router-view/>
   </div>
   <div class="bottom" v-if="!isLoginRoute">
@@ -54,7 +55,8 @@ const onTabClick = (key,path) => {
 <style scoped>
 .main {
   width: 100vw;
-  height: calc(100vh - 10vh);
+  /* height: calc(100vh - 15vh); 减去头部 15vh + 底部 10vh */
+  overflow-y: auto; /* 启用滚动，防止内容溢出 */
 }
 .head{
   height: 5vh;
@@ -71,8 +73,8 @@ const onTabClick = (key,path) => {
   right: 0;
   z-index: 1000;
   background-color: #f4f4f4;
-  border-top-left-radius: 20px;  /* 设置左上角圆角 */
-  border-top-right-radius: 20px; /* 设置右上角圆角 */
+  border-top-left-radius: 40px;  /* 设置左上角圆角 */
+  border-top-right-radius: 40px; /* 设置右上角圆角 */
   width: 100vw;
   height: 10vh;
   display: flex;

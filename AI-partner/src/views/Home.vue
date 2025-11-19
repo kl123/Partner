@@ -86,30 +86,9 @@
               <span>中国共产党史</span>
             </li> -->
           </ul>
-          <button class="add-btn">+</button>
         </div>
       </div>
     </main>
-
-    <!-- 底部导航 -->
-    <footer class="bottom-nav">
-      <div class="nav-item">
-        <i class="icon-home"></i>
-        <span>首页</span>
-      </div>
-      <div class="nav-item">
-        <i class="icon-progress"></i>
-        <span>学习进度</span>
-      </div>
-      <div class="nav-item">
-        <i class="icon-ai"></i>
-        <span>AI陪伴</span>
-      </div>
-      <div class="nav-item">
-        <i class="icon-mine"></i>
-        <span>我的</span>
-      </div>
-    </footer>
   </div>
 </template>
 
