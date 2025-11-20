@@ -14,7 +14,8 @@
     <!-- 家庭监控标题区 -->
     <div class="home-header">
       <h1>家庭监控中心 ▼</h1>
-      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn" @click="refreshDevices">🔄</span></p>
+      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn"
+          @click="refreshDevices">🔄</span></p>
     </div>
 
     <!-- 快速操作场景区 -->
@@ -30,30 +31,53 @@
     <!-- 监控设备列表区 -->
     <div class="devices-area">
       <div class="devices-header">
-        全部监控设备 
+        全部监控设备
         <span class="add-device-btn" @click="showAddDeviceModal = true">+ 添加设备</span>
       </div>
       <div class="devices-list">
-        <!-- 监控设备卡片 -->
-        <div class="device-card" v-for="device in devices" :key="device.id">
-          <div class="device-status-badge" :class="device.online ? 'online' : 'offline'">
-            {{ device.online ? '在线' : '离线' }}
-          </div>
-          <div class="device-name">
-            {{ device.name }} 
-            <span class="device-type">{{ device.type }}</span>
-          </div>
-          <div class="device-preview" @click="viewRealTime(device)">
-            <img :src="device.preview" alt="监控预览" class="preview-img">
-            <div class="real-time-tag">实时查看</div>
+        <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id"
+          @touchstart="onDeviceTouchStart($event, cam)" @touchmove="onDeviceTouchMove($event, cam)"
+          @touchend="onDeviceTouchEnd" @mousedown="onDeviceMouseDown($event, cam)" @mousemove="onDeviceMouseMove"
+          @mouseup="onDeviceMouseUp">
+          <button @click="refreshOnlineStatus(cam)" class="device-status-badge"
+            :class="[cam.online ? 'online' : 'offline', { loading: cam.loading }]">
+            <span v-if="!cam.loading">{{ cam.online ? '在线' : '离线' }}</span>
+            <span v-else class="spinner-icon">
+              <SyncOutlined spin />
+            </span>
+          </button>
+          <div class="device-name">{{ cam.name }}</div>
+          <div class="device-type">{{ cam.type }}</div>
+          <div class="study-state" v-if="cam.isStudying">正在学习</div>
+          <div class="device-preview" @click="viewRealTimeCamera(cam)">
+            <img :src="cam.preview" alt="摄像头预览" class="preview-img">
+            <div class="real-time-tag">实时数据</div>
           </div>
           <div class="device-actions">
-            <button class="action-btn" @click="viewRecord(device)">📹 回放</button>
-            <button class="action-btn" @click="setDevice(device)">⚙️ 设置</button>
+            <button class="action-btn primary" @click="startStudy(cam)" :class="{ faded: cam.studyStarted }"
+              :disabled="cam.studyStarted">开始学习</button>
+            <button class="action-btn" @click="openAccessoryDrawer(cam)">查看辅助设备</button>
+            <button class="action-btn" @click="setDevice(cam)">⚙️ 设置</button>
+          </div>
+          <div class="accessories-grid" v-if="false">
+            <div class="accessory-card"
+              v-for="acc in cam.accessories.filter(a => selectedCategory === 'all' ? true : (selectedCategory === 'camera' ? false : a.category === selectedCategory)).filter(a => !searchQuery || a.name.includes(searchQuery) || a.type.includes(searchQuery))"
+              :key="acc.id">
+              <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
+              </div>
+              <div class="accessory-name">{{ acc.name }}<span class="device-type">{{ acc.type }}</span></div>
+              <div class="accessory-preview">
+                <img :src="acc.preview" alt="设备预览" class="preview-img">
+              </div>
+              <div class="device-actions">
+                <button class="action-btn" @click="toggleAccessoryPower(acc, true)">打开</button>
+                <button class="action-btn" @click="toggleAccessoryPower(acc, false)">关闭</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <button class="edit-btn" @click="enterEditMode">编辑设备</button>
+
     </div>
 
     <!-- 工具功能区 -->
@@ -61,30 +85,178 @@
       <div class="tools-header">常用工具</div>
       <div class="tools-grid">
         <div class="tool-card" @click="openCloudStorage">
-          <div class="tool-icon">☁️</div>
-          <div class="tool-name">云存储</div>
-          <div class="tool-desc">查看历史录像</div>
+          <div class="tool-icon">🎥</div>
+          <div class="tool-name">录像库</div>
+          <div class="tool-desc">浏览与播放</div>
         </div>
         <div class="tool-card" @click="openAlertSetting">
-          <div class="tool-icon">🔔</div>
-          <div class="tool-name">报警设置</div>
+          <div class="tool-icon">🚨</div>
+          <div class="tool-name">告警中心</div>
           <div class="tool-desc">移动侦测/声音报警</div>
         </div>
         <div class="tool-card" @click="openShareManage">
-          <div class="tool-icon">👥</div>
-          <div class="tool-name">共享管理</div>
-          <div class="tool-desc">授权家人查看</div>
+          <div class="tool-icon">👨‍👩‍👧‍👦</div>
+          <div class="tool-name">成员共享</div>
+          <div class="tool-desc">为家人授权</div>
         </div>
         <div class="tool-card" @click="openDeviceHelp">
-          <div class="tool-icon">❓</div>
-          <div class="tool-name">设备帮助</div>
-          <div class="tool-desc">故障排查/教程</div>
+          <div class="tool-icon">🛠️</div>
+          <div class="tool-name">设备诊断</div>
+          <div class="tool-desc">一键自检与修复</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showCloudModal" @click="closeCloudModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>录像库</h3>
+          <span class="tool-modal-close" @click="closeCloudModal">×</span>
+        </div>
+        <div class="cloud-grid">
+          <div class="cloud-card" v-for="rec in cloudRecords" :key="rec.id" @click="playRecord(rec)">
+            <img :src="rec.thumb" class="cloud-thumb">
+            <div class="cloud-meta">
+              <span class="cloud-title">{{ rec.title }}</span>
+              <span class="cloud-sub">{{ rec.date }} · {{ rec.duration }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeRecord" class="cloud-player">
+          <video :src="activeRecord.url" controls autoplay class="cloud-video"></video>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showAlertModal" @click="closeAlertModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>告警中心</h3>
+          <span class="tool-modal-close" @click="closeAlertModal">×</span>
+        </div>
+        <div class="alert-body">
+          <div class="alert-row">
+            <label>移动侦测</label>
+            <input type="checkbox" v-model="alertSettings.motion">
+          </div>
+          <div class="alert-row">
+            <label>声音报警</label>
+            <input type="checkbox" v-model="alertSettings.sound">
+          </div>
+          <div class="alert-row">
+            <label>灵敏度</label>
+            <input type="range" min="1" max="100" v-model="alertSettings.sensitivity">
+            <span class="range-val">{{ alertSettings.sensitivity }}</span>
+          </div>
+          <div class="alert-row">
+            <label>微信通知</label>
+            <input type="checkbox" v-model="alertSettings.notifyWeChat">
+          </div>
+          <div class="alert-actions">
+            <button class="action-btn primary" @click="saveAlertSettings">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showShareModal" @click="closeShareModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>成员共享</h3>
+          <span class="tool-modal-close" @click="closeShareModal">×</span>
+        </div>
+        <div class="share-body">
+          <div class="share-list">
+            <div class="share-item" v-for="u in shareUsers" :key="u.id">
+              <span class="share-name">{{ u.name }}</span>
+              <span class="share-role">{{ u.role === 'admin' ? '管理员' : '仅查看' }}</span>
+              <button class="action-btn danger" @click="removeShareUser(u)">移除</button>
+            </div>
+          </div>
+          <div class="share-add">
+            <input class="aux-input" type="text" v-model.trim="newUserName" placeholder="成员名称">
+            <select class="aux-input" v-model="newUserRole">
+              <option value="viewer">仅查看</option>
+              <option value="admin">管理员</option>
+            </select>
+            <button class="action-btn primary" @click="addShareUser">添加成员</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showHelpModal" @click="closeHelpModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>设备诊断</h3>
+          <span class="tool-modal-close" @click="closeHelpModal">×</span>
+        </div>
+        <div class="help-body">
+          <div class="diagnostic-actions">
+            <button class="action-btn primary" @click="runDeviceDiagnostics" :disabled="diagnosticRunning">自检</button>
+            <button class="action-btn" @click="fixIssues"
+              :disabled="diagnosticRunning || diagnosticResults.length === 0">一键修复</button>
+          </div>
+          <div class="diagnostic-list">
+            <div class="diagnostic-item" v-for="d in diagnosticResults" :key="d.name"
+              :class="d.status === 'pass' ? 'ok' : 'bad'">
+              <span class="diag-name">{{ d.name }}</span>
+              <span class="diag-status">{{ d.status === 'pass' ? '✔️ 正常' : '❌ 异常' }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 底部导航 -->
-    <nav class="bottom-nav">
+    <div class="drawer-mask" v-if="drawerTranslateY < drawerPanelHeight - 1" @click="closeDrawer"
+      :style="{ bottom: navHeight + 'px' }"></div>
+    <div class="accessory-drawer" :style="{ bottom: drawerBottomOffset + 'px', zIndex: drawerZIndex }">
+      <div class="drawer-container"
+        :style="{ height: (drawerHandleHeight + (drawerPanelFullHeight - drawerTranslateY)) + 'px', transition: dragging ? 'none' : 'height 0.2s ease' }">
+        <div class="drawer-handle" @click="onDrawerHandleClick" :style="{ height: drawerHandleHeight + 'px' }"
+          @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd"
+          @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
+          <span class="drawer-hint" :style="{ top: drawerHandleHeight <= 20 ? '6px' : '8px' }"></span>
+          <span v-show="drawerTranslateY < drawerPanelHeight - 1">{{ activeDrawerCameraName }} · {{ drawerStatusText
+          }}</span>
+        </div>
+        <div class="drawer-panel" :style="{ height: drawerPanelFullHeight + 'px' }" @click.self="closeDrawer"
+          @touchstart="onDrawerTouchStart" @touchmove="onDrawerTouchMove" @touchend="onDrawerTouchEnd"
+          @mousedown="onDrawerTouchStart" @mousemove="onDrawerTouchMove" @mouseup="onDrawerTouchEnd">
+          <div class="device-actions">
+            <button class="action-btn" @click="openAddAccessoryByDrawer">➕ 添加辅助设备</button>
+            <button class="action-btn" :class="{ primary: assistEditMode }" @click="toggleEditAccessories">✏️
+              编辑辅助设备</button>
+          </div>
+          <div v-if="assistEditMode" class="edit-tip"><span class="tip-icon">✏️</span><span>编辑模式已开启</span><button
+              class="tip-exit" @click="toggleEditAccessories">退出</button></div>
+          <div v-if="!activeDrawerAccessories || activeDrawerAccessories.length === 0" class="empty-state">
+            暂无辅助设备，点击上方“添加辅助设备”</div>
+          <div class="accessories-grid">
+            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id"
+              @touchstart="onAccTouchStart($event, acc)" @touchmove="onAccTouchMove" @touchend="onAccTouchEnd"
+              @mousedown="onAccMouseDown($event, acc)" @mousemove="onAccMouseMove" @mouseup="onAccMouseUp">
+              <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
+              </div>
+              <div class="accessory-name">{{ acc.name }}<span class="device-type">{{ acc.type }}</span></div>
+              <div class="accessory-preview">
+                <img :src="acc.preview" alt="设备预览" class="preview-img">
+              </div>
+              <div class="device-actions">
+                <button class="action-btn" @click="toggleAccessoryPower(acc, true)">打开</button>
+                <button class="action-btn" @click="toggleAccessoryPower(acc, false)">关闭</button>
+                <transition>
+                  <button v-if="assistEditMode" class="action-btn danger" @click="deleteAccessory(acc)"
+                    :disabled="acc.deleting">{{ acc.deleting ? '删除中...' : '删除' }}</button>
+                </transition>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <nav class="bottom-nav" @click.capture="onBottomNavClick">
       <div class="nav-item active">
         <i class="icon-device">📹</i>
         <span>监控</span>
@@ -112,30 +284,75 @@
           <span class="modal-close" @click="showAddDeviceModal = false">×</span>
         </div>
         <div class="modal-body">
-          <p class="modal-tip">请输入设备底部/说明书上的16位设备编码</p>
-          <input 
-            type="text" 
-            v-model="deviceCode" 
-            placeholder="例如：SN_8A3F92B7C1D4E6G8"
-            maxlength="16"
-            @input="formatDeviceCode"
-            class="device-code-input"
-          >
-          <p class="modal-note">设备编码通常以SN_开头，共16位字符（字母/数字/下划线）</p>
+          <p class="modal-tip">请输入学习设备编码（BE+生产日期）</p>
+          <input type="text" v-model="deviceCode" placeholder="例如：BE20251117" @input="formatDeviceCode"
+            class="device-code-input">
+          <p class="modal-note">设备编码为BE+生产日期，例如：BE20251117</p>
+          <div class="modal-row">
+            <input type="text" v-model.trim="bindUsername" placeholder="请输入用户名" class="device-code-input">
+          </div>
+          <div class="modal-row">
+            <input type="password" v-model.trim="bindPassword" placeholder="请输入密码" class="device-code-input">
+          </div>
         </div>
         <div class="modal-footer">
           <button class="cancel-btn" @click="showAddDeviceModal = false">取消</button>
-          <button 
-            class="confirm-btn" 
-            @click="bindDeviceByCode"
-            :disabled="!isDeviceCodeValid"
-          >
+          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!isDeviceCodeValid">
             确认绑定
           </button>
         </div>
       </div>
     </div>
+
+    <div class="aux-modal-mask" v-if="showAddAuxModal" @click="closeAddAuxModal">
+      <div class="aux-modal-content" @click.stop>
+        <div class="aux-modal-header">
+          <h3>添加辅助设备</h3>
+          <span class="aux-modal-close" @click="closeAddAuxModal">×</span>
+        </div>
+        <div class="aux-top-error" v-if="auxErrors.top">{{ auxErrors.top }}</div>
+        <div class="aux-modal-body">
+          <div class="aux-field">
+            <label class="aux-label">设备ID</label>
+            <input class="aux-input" type="text" :value="auxForm.devId" disabled>
+            <div class="aux-error" v-if="auxErrors.devId">{{ auxErrors.devId }}</div>
+          </div>
+          <div class="aux-field">
+            <label class="aux-label">辅助设备标识码</label>
+            <input class="aux-input" type="text" v-model.trim="auxForm.auxiliaryDeviceId" placeholder="请输入辅助设备的唯一标识码">
+            <div class="aux-error" v-if="auxErrors.auxiliaryDeviceId">{{ auxErrors.auxiliaryDeviceId }}</div>
+          </div>
+        </div>
+        <div class="aux-modal-footer">
+          <button class="aux-btn aux-cancel" @click="closeAddAuxModal" :disabled="auxLoading">取消</button>
+          <button class="aux-btn aux-confirm" @click="submitAuxiliary" :disabled="auxLoading">确定</button>
+        </div>
+      </div>
     </div>
+    <div class="aux-modal-mask" v-if="showDeleteModal" @click="closeDeleteModal">
+      <div class="aux-modal-content" @click.stop>
+        <div class="aux-modal-header">
+          <h3>确认删除设备</h3>
+          <span class="aux-modal-close" @click="closeDeleteModal">×</span>
+        </div>
+        <div class="aux-modal-body">
+          <div class="aux-field">
+            <label class="aux-label">用户名</label>
+            <input class="aux-input" type="text" v-model.trim="deleteForm.username" placeholder="请输入用户名">
+          </div>
+          <div class="aux-field">
+            <label class="aux-label">密码</label>
+            <input class="aux-input" type="password" v-model.trim="deleteForm.password" placeholder="请输入密码">
+          </div>
+        </div>
+        <div class="aux-modal-footer">
+          <button class="aux-btn aux-cancel" @click="closeDeleteModal" :disabled="deleteLoading">取消</button>
+          <button class="aux-btn aux-confirm" @click="submitDelete"
+            :disabled="deleteLoading || !canSubmitDelete">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -150,30 +367,94 @@ export default {
       alertTime: '今天 09:23',
       alertCount: 2,
       scenes: [
-        { id: 1, name: '全部开启', icon: '' },
-        { id: 2, name: '全部关闭', icon: '' },
-        { id: 3, name: '录像模式', icon: '' },
-        { id: 4, name: '仅查看', icon: '' },
+        { id: 1, name: '学习计划', icon: '📅' },
+        { id: 2, name: '做题练习', icon: '🧩' },
+        { id: 3, name: '进度统计', icon: '📊' },
+        { id: 4, name: '笔记管理', icon: '📝' },
       ],
       devices: [
-        { 
-          id: 1, 
-          name: '客厅摄像头', 
-          type: '高清夜视', 
-          online: true, 
-          preview: 'https://picsum.photos/200/150?random=1' 
+        {
+          id: 1,
+          name: '客厅摄像头',
+          type: '高清夜视',
+          online: true,
+          preview: 'https://picsum.photos/200/150?random=1'
         },
-        { 
-          id: 2, 
-          name: '门口摄像头', 
-          type: '人脸识别', 
-          online: true, 
-          preview: 'https://picsum.photos/200/150?random=2' 
+        {
+          id: 2,
+          name: '门口摄像头',
+          type: '人脸识别',
+          online: true,
+          preview: 'https://picsum.photos/200/150?random=2'
         },
       ],
       // 新增添加设备相关数据
       showAddDeviceModal: false,
       deviceCode: '',
+      bindUsername: '',
+      bindPassword: '',
+      searchQuery: '',
+      selectedCategory: 'all',
+      selectedCameraId: null,
+      selectedDeviceType: 'RGB护眼灯',
+      activeDrawerCameraId: null,
+      drawerOpen: false,
+      drawerTranslateY: 0,
+      dragging: false,
+      gestureStartY: 0,
+      gestureStartTime: 0,
+      lastMoveY: 0,
+      lastMoveTime: 0,
+      startTranslateY: 0,
+      drawerPanelHeight: 300,
+      drawerPanelFullHeight: 420,
+      navHeight: 60,
+      showStatusPanel: false,
+      showAddAuxModal: false,
+      assistEditMode: false,
+      auxForm: {
+        devId: '',
+        devName: '',
+        auxiliaryDeviceId: ''
+      },
+      auxErrors: {
+        top: '',
+        devId: '',
+        auxiliaryDeviceId: ''
+      },
+      auxLoading: false,
+      showDeleteModal: false,
+      deleteTargetCam: null,
+      deleteForm: { username: '', password: '' },
+      deleteLoading: false,
+      longPressTimer: null,
+      longPressDuration: 800,
+      pressingCamId: null,
+      touchStartX: 0,
+      touchStartY: 0,
+      mouseDown: false,
+      accLongPressTimer: null,
+      pressingAccId: null,
+      accTouchStartX: 0,
+      accTouchStartY: 0,
+      accMouseDown: false,
+      showCloudModal: false,
+      cloudRecords: [
+        { id: 1, title: '晨读回放', date: '今天 07:30', duration: '03:12', thumb: 'https://picsum.photos/id/1015/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 2, title: '晚间复习', date: '昨天 21:10', duration: '05:06', thumb: 'https://picsum.photos/id/1016/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 3, title: '错题整理', date: '11-18 19:02', duration: '02:45', thumb: 'https://picsum.photos/id/1024/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 4, title: '英语听力', date: '11-17 20:22', duration: '04:18', thumb: 'https://picsum.photos/id/1035/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' }
+      ],
+      activeRecord: null,
+      showAlertModal: false,
+      alertSettings: { motion: true, sound: false, sensitivity: 60, notifyWeChat: true },
+      showShareModal: false,
+      shareUsers: [{ id: 1, name: '妈妈', role: 'viewer' }, { id: 2, name: '爸爸', role: 'viewer' }],
+      newUserName: '',
+      newUserRole: 'viewer',
+      showHelpModal: false,
+      diagnosticRunning: false,
+      diagnosticResults: []
     };
   },
   computed: {
@@ -187,6 +468,87 @@ export default {
     // 初始化当前时间
     this.updateTime();
     setInterval(() => this.updateTime(), 60000);
+    const base = Math.round(window.innerHeight * 0.45);
+    this.drawerPanelHeight = Math.max(240, Math.min(420, base));
+    const fullBase = Math.round(window.innerHeight * 0.7);
+    this.drawerPanelFullHeight = Math.max(this.drawerPanelHeight + 120, Math.min(560, fullBase));
+    const navEl = document.querySelector('.bottom-nav');
+    this.navHeight = navEl ? navEl.offsetHeight : 60;
+    const desk = this.cameras.find(c => c.name.includes('书桌')) || this.cameras[0];
+    this.activeDrawerCameraId = desk ? desk.id : null;
+    this.drawerTranslateY = this.drawerPanelFullHeight;
+    this.onResizeRef = () => {
+      const b = Math.round(window.innerHeight * 0.45);
+      this.drawerPanelHeight = Math.max(240, Math.min(420, b));
+      const fb = Math.round(window.innerHeight * 0.7);
+      this.drawerPanelFullHeight = Math.max(this.drawerPanelHeight + 120, Math.min(560, fb));
+      this.drawerTranslateY = this.drawerOpen ? 0 : this.drawerPanelFullHeight;
+      const el = document.querySelector('.bottom-nav');
+      this.navHeight = el ? el.offsetHeight : 60;
+    };
+    window.addEventListener('resize', this.onResizeRef);
+    try {
+      const s = localStorage.getItem('alert_settings');
+      if (s) this.alertSettings = JSON.parse(s);
+      const u = localStorage.getItem('share_users');
+      if (u) this.shareUsers = JSON.parse(u);
+    } catch (e) { }
+
+    try {
+      const data = await request.get('http://localhost:8084/device/details');
+      if (data.code === 1) {
+        this.cameras = await Promise.all(data.data.map(async (device) => {
+          let online = true; // Default
+          if (device.deviceNameOrgin && device.deviceNameOrgin !== 'Null') {
+            try {
+              const res = await axios.get('https://apis.bemfa.com/va/online', {
+                params: {
+                  uid: '6fc94297b1a4771e713523fd16d19702',
+                  topic: device.deviceNameOrgin,
+                  type: 1
+                }
+              });
+              if (res.data.code === 0) {
+                online = res.data.data;
+              }
+            } catch (err) {
+              console.error(`Failed to fetch online status for ${device.deviceNameOrgin}:`, err);
+            }
+          }
+          return {
+            id: device.id,
+            devId: device.devId,
+            name: device.deviceNameUser,
+            type: device.deviceNameOrgin,
+            online,
+            preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
+            loading: false,
+            accessories: [],
+            studyStarted: false,
+            isStudying: false,
+            studyPollingTimer: null,
+            lastStudyMsgTime: null
+          };
+        }));
+        this.updateCounts();
+      }
+    } catch (error) {
+      console.error('Failed to fetch devices:', error);
+    }
+    this.refreshInterval = setInterval(() => {
+      this.cameras.forEach(cam => this.refreshOnlineStatus(cam, false));
+    }, 30000);
+  },
+  beforeUnmount() {
+    if (this.onResizeRef) window.removeEventListener('resize', this.onResizeRef);
+    try {
+      (this.cameras || []).forEach(cam => {
+        if (cam && cam.studyPollingTimer) {
+          clearInterval(cam.studyPollingTimer);
+          cam.studyPollingTimer = null;
+        }
+      });
+    } catch (e) { }
   },
   methods: {
     updateTime() {
@@ -201,8 +563,16 @@ export default {
       });
     },
     handleSceneClick(scene) {
-      alert(`执行场景：${scene.name}`);
-      // 实际项目中可添加场景执行逻辑（如控制设备开关、模式切换等）
+      const routes = {
+        '学习计划': '/customization',
+        '做题练习': '/test',
+        '进度统计': '/study',
+        '笔记管理': '/historical'
+      };
+      const path = routes[scene.name];
+      if (path) {
+        this.$router.push(path);
+      }
     },
     viewRealTime(device) {
       if (device.online) {
@@ -224,25 +594,475 @@ export default {
       alert(`进入${device.name}设置页面`);
       // 跳转设备设置页面
     },
+    async startStudy(cam) {
+      const topic = (cam && cam.type && cam.type !== 'Null') ? cam.type : (cam && cam.name ? cam.name : '');
+      if (!topic) {
+        message.error('设备主题无效');
+        return;
+      }
+      try {
+        const res = await axios.post('https://apis.bemfa.com/va/postJsonMsg', {
+          uid: '6fc94297b1a4771e713523fd16d19702',
+          topic,
+          type: 1,
+          msg: 'on'
+        }, {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          timeout: 10000
+        });
+        if (res && res.data && res.data.code === 0) {
+          message.success('开始学习已推送');
+          cam.studyStarted = true;
+          try {
+            await request.get('http://localhost:8084/device/sync');
+          } catch (e2) { }
+          this.startStudyPolling(cam);
+        } else {
+          const msg = (res && res.data && res.data.message) ? res.data.message : '推送失败';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      }
+    },
+    startStudyPolling(cam) {
+      const topic = (cam && cam.type && cam.type !== 'Null') ? cam.type : (cam && cam.name ? cam.name : '');
+      if (!topic) return;
+      if (cam.studyPollingTimer) {
+        clearInterval(cam.studyPollingTimer);
+        cam.studyPollingTimer = null;
+      }
+      const poll = async () => {
+        try {
+          const res = await axios.get('https://apis.bemfa.com/va/getmsg', {
+            params: {
+              uid: '6fc94297b1a4771e713523fd16d19702',
+              topic,
+              type: 1
+            },
+            timeout: 10000
+          });
+          if (res && res.data && res.data.code === 0) {
+            const arr = Array.isArray(res.data.data) ? res.data.data : [];
+            const latest = arr[0] || null;
+            if (latest) {
+              cam.lastStudyMsgTime = latest.time || null;
+              const msg = String(latest.msg || '').toLowerCase();
+              cam.isStudying = (msg === 'on');
+            }
+          }
+        } catch (e) { }
+      };
+      poll();
+      cam.studyPollingTimer = setInterval(poll, 5000);
+    },
     addDevice() {
       // 原alert替换为显示弹窗
       this.showAddDeviceModal = true;
-      this.deviceCode = ''; // 重置输入框
+      this.deviceCode = '';
     },
-    enterEditMode() {
-      alert('进入设备编辑模式（可删除/排序设备）');
+    openAddAccessory(cam) {
+      this.selectedCameraId = cam.id;
+      this.selectedDeviceType = 'RGB护眼灯';
+      this.showAddDeviceModal = true;
+      this.deviceCode = '';
+    },
+    async openAccessoryDrawer(cam) {
+      this.activeDrawerCameraId = cam.id;
+      const partialGap = this.drawerPanelFullHeight - this.drawerPanelHeight;
+      this.drawerTranslateY = partialGap;
+      this.drawerOpen = true;
+
+      try {
+        const data = await request.get('http://localhost:8084/device/auxiliary/list', {
+          params: { devId: cam.devId }
+        });
+        if (data.code === 1) {
+          cam.accessories = data.data.map(aux => ({
+            id: aux.id,
+            name: aux.assistDeviceName,
+            type: '辅助设备',
+            category: 'assist',
+            online: aux.state === 'true',
+            powerOn: aux.state === 'true',
+            preview: aux.imgUrl,
+            auxiliaryDeviceId: aux.auxiliaryDeviceId || aux.id || aux.assistDeviceName
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch auxiliary devices:', error);
+      }
+    },
+    openAddAccessoryByDrawer() {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId) || this.cameras[0];
+      if (!cam) return;
+      this.openAddAuxiliaryModal(cam);
+    },
+    toggleEditAccessories() {
+      this.assistEditMode = !this.assistEditMode;
+    },
+    deleteAccessory(acc) {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId);
+      if (!cam) return;
+      Modal.confirm({
+        centered: true,
+        zIndex: 10001,
+        title: '确认删除该辅助设备吗？',
+        content: `设备：${acc.name}`,
+        okText: '确定',
+        cancelText: '取消',
+        onOk: async () => {
+          acc.deleting = true;
+          try {
+            const res = await request.post('http://localhost:8084/device/auxiliary/init', null, {
+              params: { auxiliaryDeviceId: acc.auxiliaryDeviceId || acc.id || acc.name },
+              timeout: 10000
+            });
+            if (res && res.code === 1) {
+              cam.accessories = cam.accessories.filter(a => a.id !== acc.id);
+              this.updateCounts();
+              message.success('删除成功');
+            } else {
+              const msg = (res && res.msg) ? res.msg : '删除失败，请重试';
+              message.error(msg);
+            }
+          } catch (e) {
+            message.error('网络异常，请检查连接');
+          } finally {
+            acc.deleting = false;
+          }
+        }
+      });
+    },
+    openAddAuxiliaryModal(cam) {
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      this.auxForm.devId = cam.devId || '';
+      this.auxForm.devName = cam.name || '';
+      this.auxForm.auxiliaryDeviceId = '';
+      this.showAddAuxModal = true;
+    },
+    closeAddAuxModal() {
+      if (this.auxLoading) return;
+      this.showAddAuxModal = false;
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      this.auxForm.auxiliaryDeviceId = '';
+    },
+    validateAuxiliaryForm() {
+      this.auxErrors = { top: '', devId: '', auxiliaryDeviceId: '' };
+      let ok = true;
+      if (!this.auxForm.devId) {
+        this.auxErrors.devId = '设备不存在';
+        ok = false;
+      }
+      const reg = /^[A-Za-z0-9_]{6,32}$/;
+      if (!this.auxForm.auxiliaryDeviceId) {
+        this.auxErrors.auxiliaryDeviceId = '请输入辅助设备标识码';
+        ok = false;
+      } else if (!reg.test(this.auxForm.auxiliaryDeviceId)) {
+        this.auxErrors.auxiliaryDeviceId = '辅助设备标识码格式不正确';
+        ok = false;
+      }
+      return ok;
+    },
+    async submitAuxiliary() {
+      if (this.auxLoading) return;
+      if (!this.validateAuxiliaryForm()) return;
+      this.auxLoading = true;
+      try {
+        const res = await request.post('http://localhost:8084/device/auxiliary/add', null, {
+          params: {
+            devId: this.auxForm.devId,
+            auxiliaryDeviceId: this.auxForm.auxiliaryDeviceId
+          },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          await this.refreshActiveDrawerAccessories();
+          this.showAddAuxModal = false;
+          message.success('添加成功');
+        } else if (res && res.code === 0) {
+          const msg = res.msg || '';
+          if (msg === '设备不存在') {
+            this.auxErrors.devId = '设备不存在';
+          } else if (msg === '无权操作该设备') {
+            this.auxErrors.top = '无权操作该设备';
+          } else if (msg === '辅助设备不存在') {
+            this.auxErrors.auxiliaryDeviceId = '辅助设备不存在';
+          } else if (msg === '绑定失败') {
+            this.auxErrors.top = '绑定失败，请重试';
+          } else {
+            this.auxErrors.top = msg || '绑定失败，请重试';
+          }
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      } finally {
+        this.auxLoading = false;
+      }
+    },
+    async refreshActiveDrawerAccessories() {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId) || this.cameras[0];
+      if (!cam) return;
+      try {
+        const data = await request.get('http://localhost:8084/device/auxiliary/list', {
+          params: { devId: cam.devId }
+        });
+        if (data.code === 1) {
+          cam.accessories = data.data.map(aux => ({
+            id: aux.id,
+            name: aux.assistDeviceName,
+            type: '辅助设备',
+            category: 'assist',
+            online: aux.state === 'true',
+            powerOn: aux.state === 'true',
+            preview: aux.imgUrl,
+            auxiliaryDeviceId: aux.auxiliaryDeviceId || aux.id || aux.assistDeviceName
+          }));
+          this.updateCounts();
+        }
+      } catch (err) { }
+    },
+    onDeviceTouchStart(e, cam) {
+      this.cancelPressTimer();
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      this.touchStartX = t.clientX;
+      this.touchStartY = t.clientY;
+      this.pressingCamId = cam.id;
+      this.longPressTimer = setTimeout(() => {
+        if (this.pressingCamId === cam.id) {
+          this.confirmDelete(cam);
+        }
+      }, this.longPressDuration);
+    },
+    onDeviceTouchMove(e, cam) {
+      if (!this.pressingCamId) return;
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      const dx = t.clientX - this.touchStartX;
+      const dy = t.clientY - this.touchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelPressTimer();
+      }
+    },
+    onDeviceTouchEnd() {
+      this.cancelPressTimer();
+      this.pressingCamId = null;
+    },
+    onDeviceMouseDown(e, cam) {
+      this.mouseDown = true;
+      this.pressingCamId = cam.id;
+      this.touchStartX = e.clientX;
+      this.touchStartY = e.clientY;
+      this.cancelPressTimer();
+      this.longPressTimer = setTimeout(() => {
+        if (this.mouseDown && this.pressingCamId === cam.id) {
+          this.confirmDelete(cam);
+        }
+      }, this.longPressDuration);
+    },
+    onDeviceMouseMove(e) {
+      if (!this.mouseDown || !this.pressingCamId) return;
+      const dx = e.clientX - this.touchStartX;
+      const dy = e.clientY - this.touchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelPressTimer();
+      }
+    },
+    onDeviceMouseUp() {
+      this.mouseDown = false;
+      this.cancelPressTimer();
+      this.pressingCamId = null;
+    },
+    cancelPressTimer() {
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+    },
+    onAccTouchStart(e, acc) {
+      this.cancelAccPressTimer();
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      this.accTouchStartX = t.clientX;
+      this.accTouchStartY = t.clientY;
+      this.pressingAccId = acc.id;
+      this.accLongPressTimer = setTimeout(() => {
+        if (this.pressingAccId === acc.id) {
+          this.deleteAccessory(acc);
+        }
+      }, this.longPressDuration);
+    },
+    onAccTouchMove(e) {
+      if (!this.pressingAccId) return;
+      const t = e.touches && e.touches[0] ? e.touches[0] : e;
+      const dx = t.clientX - this.accTouchStartX;
+      const dy = t.clientY - this.accTouchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelAccPressTimer();
+      }
+    },
+    onAccTouchEnd() {
+      this.cancelAccPressTimer();
+      this.pressingAccId = null;
+    },
+    onAccMouseDown(e, acc) {
+      this.accMouseDown = true;
+      this.pressingAccId = acc.id;
+      this.accTouchStartX = e.clientX;
+      this.accTouchStartY = e.clientY;
+      this.cancelAccPressTimer();
+      this.accLongPressTimer = setTimeout(() => {
+        if (this.accMouseDown && this.pressingAccId === acc.id) {
+          this.deleteAccessory(acc);
+        }
+      }, this.longPressDuration);
+    },
+    onAccMouseMove(e) {
+      if (!this.accMouseDown || !this.pressingAccId) return;
+      const dx = e.clientX - this.accTouchStartX;
+      const dy = e.clientY - this.accTouchStartY;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        this.cancelAccPressTimer();
+      }
+    },
+    onAccMouseUp() {
+      this.accMouseDown = false;
+      this.cancelAccPressTimer();
+      this.pressingAccId = null;
+    },
+    cancelAccPressTimer() {
+      if (this.accLongPressTimer) {
+        clearTimeout(this.accLongPressTimer);
+        this.accLongPressTimer = null;
+      }
+    },
+    confirmDelete(cam) {
+      Modal.confirm({
+        centered: true,
+        title: '确认删除该设备吗？',
+        content: `设备：${cam.name}`,
+        okText: '继续',
+        cancelText: '取消',
+        onOk: () => {
+          this.deleteTargetCam = cam;
+          this.deleteForm = { username: '', password: '' };
+          this.showDeleteModal = true;
+        }
+      });
+    },
+    async submitDelete() {
+      if (!this.canSubmitDelete || this.deleteLoading) return;
+      this.deleteLoading = true;
+      const cam = this.deleteTargetCam;
+      try {
+        const accs = Array.isArray(cam.accessories) ? cam.accessories : [];
+        for (const acc of accs) {
+          const aid = acc.auxiliaryDeviceId || acc.id || acc.name;
+          try {
+            await request.post('http://localhost:8084/device/auxiliary/init', null, {
+              params: { auxiliaryDeviceId: aid },
+              timeout: 10000
+            });
+          } catch (e) { }
+        }
+        const res = await request.post('http://localhost:8084/device/init', {
+          username: this.deleteForm.username,
+          password: this.deleteForm.password
+        }, {
+          params: { devId: cam.devId },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          this.cameras = this.cameras.filter(c => c.id !== cam.id);
+          this.updateCounts();
+          message.success('删除成功');
+          this.showDeleteModal = false;
+          this.deleteTargetCam = null;
+          this.deleteForm = { username: '', password: '' };
+        } else {
+          const msg = (res && res.msg) ? res.msg : '删除失败，请重试';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      } finally {
+        this.deleteLoading = false;
+      }
+    },
+    closeDeleteModal() {
+      if (this.deleteLoading) return;
+      this.showDeleteModal = false;
+      this.deleteTargetCam = null;
+      this.deleteForm = { username: '', password: '' };
     },
     openCloudStorage() {
-      alert('打开云存储管理');
+      this.showCloudModal = true;
     },
     openAlertSetting() {
-      alert('打开报警设置');
+      this.showAlertModal = true;
     },
     openShareManage() {
-      alert('打开共享管理');
+      this.showShareModal = true;
     },
     openDeviceHelp() {
-      alert('打开设备帮助中心');
+      this.showHelpModal = true;
+    },
+    closeCloudModal() {
+      this.showCloudModal = false;
+      this.activeRecord = null;
+    },
+    playRecord(rec) {
+      this.activeRecord = rec;
+    },
+    closeAlertModal() {
+      this.showAlertModal = false;
+    },
+    saveAlertSettings() {
+      try {
+        localStorage.setItem('alert_settings', JSON.stringify(this.alertSettings));
+        message.success('已保存告警设置');
+      } catch (e) { }
+    },
+    closeShareModal() {
+      this.showShareModal = false;
+    },
+    addShareUser() {
+      const name = (this.newUserName || '').trim();
+      if (!name) {
+        message.error('请输入成员名称');
+        return;
+      }
+      const id = Date.now();
+      this.shareUsers.push({ id, name, role: this.newUserRole });
+      this.newUserName = '';
+      try {
+        localStorage.setItem('share_users', JSON.stringify(this.shareUsers));
+      } catch (e) { }
+    },
+    removeShareUser(u) {
+      this.shareUsers = this.shareUsers.filter(x => x.id !== u.id);
+      try {
+        localStorage.setItem('share_users', JSON.stringify(this.shareUsers));
+      } catch (e) { }
+    },
+    closeHelpModal() {
+      this.showHelpModal = false;
+    },
+    async runDeviceDiagnostics() {
+      if (this.diagnosticRunning) return;
+      this.diagnosticRunning = true;
+      this.diagnosticResults = [];
+      const items = ['网络连接', '设备在线', '权限配置', '同步服务', '摄像头预览'];
+      for (const name of items) {
+        await new Promise(r => setTimeout(r, 300));
+        const ok = Math.random() > 0.3;
+        this.diagnosticResults.push({ name, status: ok ? 'pass' : 'fail' });
+      }
+      this.diagnosticRunning = false;
+      const anyBad = this.diagnosticResults.some(d => d.status === 'fail');
+      if (anyBad) message.error('发现异常项'); else message.success('自检通过');
+    },
+    fixIssues() {
+      this.diagnosticResults = this.diagnosticResults.map(d => ({ ...d, status: 'pass' }));
+      message.success('修复完成');
     },
     goToRecord() {
       alert('跳转到录像回放页面');
@@ -258,27 +1078,251 @@ export default {
       this.deviceCode = this.deviceCode.toUpperCase();
     },
     // 新增：通过设备编码绑定设备
-    bindDeviceByCode() {
-      // 模拟设备绑定逻辑
-      const deviceTypes = ['高清夜视', '人脸识别', '全景监控', '红外感应'];
-      const randomType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
-      const newDevice = {
-        id: Date.now(),
-        name: `新绑定设备(${this.deviceCode.slice(0, 6)})`, // 用编码前6位作为设备名称后缀
-        type: randomType,
-        online: false, // 新绑定设备默认离线，需等待联网
-        preview: `https://picsum.photos/200/150?random=${Date.now()}`
-      };
-
-      // 添加新设备到列表
-      this.devices.push(newDevice);
-      this.totalDevices = this.devices.length;
-      this.onlineDevices = this.devices.filter(d => d.online).length;
-
-      // 关闭弹窗并提示
-      this.showAddDeviceModal = false;
-      alert(`设备绑定成功！\n设备编码：${this.deviceCode}\n设备类型：${randomType}\n请等待设备联网（约1-2分钟）`);
-    }
+    async bindDeviceByCode() {
+      if (!this.canBind) return;
+      try {
+        const res = await request.post('http://localhost:8084/device/bind', {
+          username: this.bindUsername,
+          password: this.bindPassword
+        }, {
+          params: { devId: this.deviceCode },
+          timeout: 10000
+        });
+        if (res && res.code === 1) {
+          message.success('绑定成功');
+          this.showAddDeviceModal = false;
+          this.bindUsername = '';
+          this.bindPassword = '';
+          this.deviceCode = '';
+          try {
+            const data = await request.get('http://localhost:8084/device/details');
+            if (data.code === 1) {
+              this.cameras = await Promise.all(data.data.map(async (device) => {
+                let online = true;
+                if (device.deviceNameOrgin && device.deviceNameOrgin !== 'Null') {
+                  try {
+                    const o = await axios.get('https://apis.bemfa.com/va/online', {
+                      params: {
+                        uid: '6fc94297b1a4771e713523fd16d19702',
+                        topic: device.deviceNameOrgin,
+                        type: 1
+                      }
+                    });
+                    if (o.data.code === 0) {
+                      online = o.data.data;
+                    }
+                  } catch (err) { }
+                }
+                return {
+                  id: device.id,
+                  devId: device.devId,
+                  name: device.deviceNameUser,
+                  type: device.deviceNameOrgin,
+                  online,
+                  preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
+                  loading: false,
+                  accessories: [],
+                  studyStarted: false,
+                  isStudying: false,
+                  studyPollingTimer: null,
+                  lastStudyMsgTime: null
+                };
+              }));
+              this.updateCounts();
+            } else {
+              const fallback = {
+                id: Date.now(),
+                devId: this.deviceCode,
+                name: this.deviceCode,
+                type: '新设备',
+                online: false,
+                preview: `https://picsum.photos/400/300?random=${Date.now()}`,
+                loading: false,
+                accessories: [],
+                studyStarted: false,
+                isStudying: false,
+                studyPollingTimer: null,
+                lastStudyMsgTime: null
+              };
+              this.cameras.push(fallback);
+              this.updateCounts();
+            }
+          } catch (e) {
+            const fallback = {
+              id: Date.now(),
+              devId: this.deviceCode,
+              name: this.deviceCode,
+              type: '新设备',
+              online: false,
+              preview: `https://picsum.photos/400/300?random=${Date.now()}`,
+              loading: false,
+              accessories: [],
+              studyStarted: false
+            };
+            this.cameras.push(fallback);
+            this.updateCounts();
+          }
+        } else {
+          const msg = (res && res.msg) ? res.msg : '绑定失败，请重试';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      }
+    },
+    toggleAccessoryPower(acc, state) {
+      if (!acc.online) {
+        alert(`${acc.name}当前离线`);
+        return;
+      }
+      acc.powerOn = !!state;
+      alert(`${acc.name}${state ? '已打开' : '已关闭'}`);
+    },
+    onDrawerTouchStart(e) {
+      const t = e.target;
+      const tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+      if (['button', 'input', 'select', 'a', 'textarea'].includes(tag) || (t && t.closest && t.closest('.device-actions'))) return;
+      e.preventDefault();
+      this.dragging = true;
+      this.gestureStartY = (e.touches ? e.touches[0].clientY : e.clientY);
+      this.gestureStartTime = (performance && performance.now) ? performance.now() : Date.now();
+      this.lastMoveY = this.gestureStartY;
+      this.lastMoveTime = this.gestureStartTime;
+      this.startTranslateY = this.drawerTranslateY;
+    },
+    onDrawerTouchMove(e) {
+      if (!this.dragging) return;
+      e.preventDefault();
+      const y = (e.touches ? e.touches[0].clientY : e.clientY);
+      const dy = y - this.gestureStartY;
+      const max = this.drawerPanelFullHeight;
+      const min = -Math.round(this.drawerPanelFullHeight * 0.12);
+      let val = this.startTranslateY + dy;
+      if (val < min) val = min;
+      if (val > max) val = max;
+      this.drawerTranslateY = val;
+      const now = (performance && performance.now) ? performance.now() : Date.now();
+      this.lastMoveY = y;
+      this.lastMoveTime = now;
+    },
+    onDrawerTouchEnd() {
+      this.dragging = false;
+      const dt = Math.max(1, ((performance && performance.now) ? performance.now() : Date.now()) - this.gestureStartTime);
+      const vy = (this.lastMoveY - this.gestureStartY) / dt;
+      let openVelocityThreshold = 0.3; // 上滑易开
+      let closeVelocityThreshold = 0.6; // 下滑难关
+      const full = this.drawerPanelFullHeight;
+      const partialGap = full - this.drawerPanelHeight;
+      const y = this.drawerTranslateY;
+      const overDragThreshold = -Math.round(full * 0.12);
+      // 动态速度阈值：如果速度快，进一步放宽阈值
+      if (Math.abs(vy) > 1) {
+        openVelocityThreshold = 0.2;
+        closeVelocityThreshold = 0.8;
+      }
+      if (y < overDragThreshold) {
+        this.drawerTranslateY = 0;
+        this.drawerOpen = true;
+        return;
+      }
+      if (vy < -openVelocityThreshold) { // 上滑速度快 -> 完全展开
+        this.drawerTranslateY = 0;
+        this.drawerOpen = true;
+        return;
+      }
+      if (vy > closeVelocityThreshold) { // 下滑速度快 -> 关闭
+        this.drawerTranslateY = full;
+        this.drawerOpen = false;
+        return;
+      }
+      // 非对称阈值：打开阈值低（15%），关闭阈值高（85%）
+      const t1 = partialGap; // 调整为 partialGap，使得从 partial 上拉更容易到 full
+      const t2 = full * 0.85; // 难关
+      // 非对称吸附区间：上侧小（易逃脱到 full），下侧大（难逃脱到 closed）
+      const upperSnap = 10;
+      const lowerSnap = 30;
+      if (y > partialGap - upperSnap && y < partialGap + lowerSnap) {
+        this.drawerTranslateY = partialGap;
+        this.drawerOpen = true;
+        return;
+      }
+      if (y <= t1) {
+        this.drawerTranslateY = 0;
+        this.drawerOpen = true;
+      } else if (y >= t2) {
+        this.drawerTranslateY = full;
+        this.drawerOpen = false;
+      } else {
+        this.drawerTranslateY = partialGap;
+        this.drawerOpen = true;
+      }
+    },
+    onDrawerHandleClick() {
+      const full = this.drawerPanelFullHeight;
+      const partialGap = full - this.drawerPanelHeight;
+      const y = this.drawerTranslateY;
+      if (y >= full - 1) { // closed -> partial
+        this.drawerTranslateY = partialGap;
+        this.drawerOpen = true;
+      } else if (y > partialGap / 2) { // partial -> full
+        this.drawerTranslateY = 0;
+        this.drawerOpen = true;
+      } else { // full -> closed
+        this.drawerTranslateY = full;
+        this.drawerOpen = false;
+      }
+    },
+    closeDrawer() {
+      this.drawerOpen = false;
+      this.drawerTranslateY = this.drawerPanelFullHeight;
+      this.assistEditMode = false;
+    },
+    onBottomNavClick() {
+      if (this.drawerTranslateY < this.drawerPanelHeight) {
+        this.closeDrawer();
+      }
+    },
+    updateCounts() {
+      const cams = this.cameras.length;
+      const accs = this.cameras.reduce((s, c) => s + c.accessories.length, 0);
+      const onlineCams = this.cameras.filter(c => c.online).length;
+      const onlineAccs = this.cameras.reduce((s, c) => s + c.accessories.filter(a => a.online).length, 0);
+      this.totalDevices = cams + accs;
+      this.onlineDevices = onlineCams + onlineAccs;
+    },
+    async refreshOnlineStatus(cam, showLoading = true) {
+      if (!cam.type || cam.type === 'Null') return;
+      if (showLoading && cam.loading) return;
+      if (showLoading) cam.loading = true;
+      const start = (performance && performance.now) ? performance.now() : Date.now();
+      try {
+        const res = await axios.get('https://apis.bemfa.com/va/online', {
+          params: {
+            uid: '6fc94297b1a4771e713523fd16d19702',
+            topic: cam.type,
+            type: 1
+          }
+        });
+        if (res.data.code === 0) {
+          cam.online = res.data.data;
+        }
+      } catch (err) {
+      }
+      const now = (performance && performance.now) ? performance.now() : Date.now();
+      const elapsed = now - start;
+      if (showLoading) {
+        const minLoading = 2000;
+        if (elapsed < minLoading) {
+          await new Promise(r => setTimeout(r, minLoading - elapsed));
+        }
+        cam.loading = false;
+      }
+      this.updateCounts();
+    },
+  },
+  destroyed() {
+    clearInterval(this.refreshInterval);
+    window.removeEventListener('resize', this.onResizeRef);
   }
 };
 </script>
@@ -291,7 +1335,8 @@ export default {
   background: linear-gradient(to bottom, #2d8cf0 0%, #e8f4f8 100%);
   color: #333;
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  padding-bottom: 80px; /* 预留底部导航空间 */
+  padding-bottom: 80px;
+  /* 预留底部导航空间 */
 }
 
 /* 顶部栏 */
@@ -302,16 +1347,19 @@ export default {
   padding: 16px;
   color: #fff;
 }
+
 .time {
   font-size: 18px;
   font-weight: 500;
 }
+
 .network {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
 }
+
 .battery {
   padding: 2px 4px;
   background: rgba(255, 255, 255, 0.2);
@@ -323,12 +1371,14 @@ export default {
   text-align: center;
   margin: 20px 0;
 }
+
 .home-header h1 {
   font-size: 32px;
   font-weight: 600;
   color: #fff;
   margin: 0;
 }
+
 .device-status {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
@@ -338,10 +1388,12 @@ export default {
   justify-content: center;
   gap: 8px;
 }
+
 .refresh-btn {
   cursor: pointer;
   font-size: 16px;
 }
+
 .refresh-btn:active {
   transform: rotate(180deg);
   transition: transform 0.5s;
@@ -355,40 +1407,47 @@ export default {
   margin-bottom: 24px;
   gap: 12px;
 }
+
 .scene-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   flex: 1;
 }
+
 .scene-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   padding: 16px;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s;
 }
+
 .scene-card:active {
   transform: scale(0.95);
 }
+
 .scene-icon {
   font-size: 28px;
   margin-bottom: 8px;
 }
+
 .scene-name {
   font-size: 16px;
   font-weight: 500;
 }
+
 .monitor-alert {
   background: linear-gradient(to bottom, #ff7a45, #ff4d4f);
   color: #fff;
   border-radius: 12px;
   padding: 16px;
   flex: 1;
-  box-shadow: 0 4px 12px rgba(255,77,79,0.3);
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
 }
+
 .monitor-alert h3 {
   font-size: 18px;
   margin: 0 0 8px;
@@ -396,16 +1455,19 @@ export default {
   align-items: center;
   gap: 8px;
 }
+
 .alert-time {
   font-size: 12px;
   opacity: 0.9;
   margin: 0 0 4px;
 }
+
 .alert-content {
   font-size: 14px;
   margin: 0 0 16px;
   line-height: 1.4;
 }
+
 .check-btn {
   background: #fff;
   color: #ff4d4f;
@@ -418,6 +1480,7 @@ export default {
   width: 100%;
   transition: background 0.2s;
 }
+
 .check-btn:active {
   background: #f5f5f5;
 }
@@ -427,6 +1490,7 @@ export default {
   padding: 0 16px;
   margin-bottom: 24px;
 }
+
 .devices-header {
   font-size: 18px;
   font-weight: 500;
@@ -436,8 +1500,9 @@ export default {
   justify-content: space-between;
   align-items: center;
 }
+
 .add-device-btn {
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   color: #2d8cf0;
   font-size: 14px;
   padding: 6px 12px;
@@ -445,19 +1510,22 @@ export default {
   cursor: pointer;
   font-weight: 500;
 }
+
 .devices-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
+
 .device-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: relative;
 }
+
 .device-status-badge {
   position: absolute;
   top: 12px;
@@ -467,26 +1535,42 @@ export default {
   border-radius: 12px;
   font-weight: 500;
 }
+
 .device-status-badge.online {
   background: #e6f4ea;
   color: #52c41a;
 }
+
 .device-status-badge.offline {
   background: #f5f5f5;
   color: #8c8c8c;
 }
+
 .device-name {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
-  padding-right: 60px; /* 给状态徽章留空间 */
+  padding-right: 60px;
+  /* 给状态徽章留空间 */
 }
+
 .device-type {
   font-size: 12px;
   color: #666;
   margin-left: 4px;
   font-weight: normal;
 }
+
+.study-state {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #52c41a;
+  background: #e6f4ea;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
 .device-preview {
   width: 100%;
   height: 120px;
@@ -496,26 +1580,30 @@ export default {
   margin: 8px 0;
   cursor: pointer;
 }
+
 .preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .real-time-tag {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   color: #fff;
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 12px;
 }
+
 .device-actions {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
+
 .action-btn {
   flex: 1;
   background: #f5f7fa;
@@ -530,10 +1618,12 @@ export default {
   justify-content: center;
   gap: 4px;
 }
+
 .action-btn:active {
   background: #e8f4f8;
   color: #2d8cf0;
 }
+
 .edit-btn {
   display: block;
   margin: 0 auto;
@@ -544,8 +1634,9 @@ export default {
   font-size: 14px;
   cursor: pointer;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
 .edit-btn:active {
   background: #f5f5f5;
 }
@@ -554,40 +1645,222 @@ export default {
 .tools-area {
   padding: 0 16px;
 }
+
 .tools-header {
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 16px;
   color: #333;
 }
+
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
+
 .tool-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   cursor: pointer;
 }
+
 .tool-card:active {
   transform: scale(0.95);
 }
+
 .tool-icon {
   font-size: 24px;
   margin-bottom: 8px;
   color: #2d8cf0;
 }
+
 .tool-name {
   font-size: 16px;
   font-weight: 500;
   margin-bottom: 4px;
 }
+
 .tool-desc {
   font-size: 12px;
   color: #666;
+}
+
+.tool-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.tool-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 520px;
+  max-width: 92vw;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.tool-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tool-modal-close {
+  font-size: 22px;
+  cursor: pointer;
+  color: #999;
+}
+
+.cloud-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.cloud-card {
+  background: #f7f9fc;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.cloud-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cloud-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cloud-sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.cloud-player {
+  margin-top: 12px;
+}
+
+.cloud-video {
+  width: 100%;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-val {
+  font-size: 12px;
+  color: #666;
+}
+
+.alert-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.share-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7f9fc;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.share-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.share-role {
+  font-size: 12px;
+  color: #666;
+  margin-left: auto;
+}
+
+.share-add {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  gap: 8px;
+}
+
+.help-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagnostic-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.diagnostic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnostic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.diagnostic-item.ok {
+  background: #e6f4ea;
+  color: #2e7d32;
+}
+
+.diagnostic-item.bad {
+  background: #fff1f0;
+  color: #9c1f25;
 }
 
 /* 底部导航 */
@@ -605,6 +1878,7 @@ export default {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
 }
+
 .nav-item {
   display: flex;
   flex-direction: column;
@@ -614,13 +1888,16 @@ export default {
   cursor: pointer;
   position: relative;
 }
+
 .nav-item.active {
   color: #2d8cf0;
 }
+
 .nav-item i {
   font-size: 24px;
   margin-bottom: 4px;
 }
+
 .notification-badge {
   position: absolute;
   top: -4px;
@@ -649,6 +1926,7 @@ export default {
   justify-content: center;
   z-index: 999;
 }
+
 .modal-content {
   background: #fff;
   border-radius: 16px;
@@ -657,6 +1935,7 @@ export default {
   padding: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -665,28 +1944,34 @@ export default {
   border-bottom: 1px solid #eee;
   padding-bottom: 16px;
 }
+
 .modal-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: #333;
 }
+
 .modal-close {
   font-size: 24px;
   cursor: pointer;
   color: #999;
   transition: color 0.3s;
 }
+
 .modal-close:hover {
   color: #333;
 }
+
 .modal-body {
   margin-bottom: 24px;
 }
+
 .modal-tip {
   font-size: 14px;
   color: #666;
   margin-bottom: 12px;
 }
+
 .device-code-input {
   width: 100%;
   padding: 14px 16px;
@@ -696,20 +1981,25 @@ export default {
   outline: none;
   transition: border 0.3s;
 }
+
 .device-code-input:focus {
   border-color: #2d8cf0;
 }
+
 .modal-note {
   font-size: 12px;
   color: #999;
   margin-top: 8px;
   line-height: 1.4;
 }
+
 .modal-footer {
   display: flex;
   gap: 12px;
 }
-.cancel-btn, .confirm-btn {
+
+.cancel-btn,
+.confirm-btn {
   flex: 1;
   padding: 12px 0;
   border: none;
@@ -718,22 +2008,48 @@ export default {
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .cancel-btn {
   background: #f5f5f5;
   color: #666;
 }
+
 .cancel-btn:hover {
   background: #eee;
 }
+
 .confirm-btn {
   background: #2d8cf0;
   color: #fff;
 }
+
 .confirm-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
 }
+
 .confirm-btn:not(:disabled):hover {
   background: #1a73e8;
 }
 </style>
+/* 使用 Vue 默认过渡类名 */
+.v-enter-active,
+.v-leave-active {
+transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.v-enter-from,
+.v-leave-to {
+opacity: 0;
+transform: translateY(10px) scale(0.98);
+}
+
+.v-enter-to,
+.v-leave-from {
+opacity: 1;
+transform: translateY(0) scale(1);
+}
+.action-btn.faded {
+opacity: 0.6;
+filter: saturate(0.7);
+}
