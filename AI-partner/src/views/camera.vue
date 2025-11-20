@@ -13,9 +13,14 @@
 
     <!-- 家庭监控标题区 -->
     <div class="home-header">
-      <h1>家庭监控中心 ▼</h1>
-      <p class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span class="refresh-btn"
-          @click="refreshDevices">🔄</span></p>
+      <button class="header-toggle" @click="toggleStatus" :aria-expanded="showStatusPanel">
+        <span class="title-text">学习设备中心</span>
+        <span class="arrow" :class="{ open: showStatusPanel }">▲</span>
+      </button>
+      <transition name="fade-slide">
+        <p v-if="showStatusPanel" class="device-status">当前在线设备：{{ onlineDevices }}/{{ totalDevices }} <span
+            class="refresh-btn" @click="refreshDevices">🔄</span></p>
+      </transition>
     </div>
 
     <!-- 快速操作场景区 -->
@@ -31,8 +36,12 @@
     <!-- 监控设备列表区 -->
     <div class="devices-area">
       <div class="devices-header">
-        全部监控设备
-        <span class="add-device-btn" @click="showAddDeviceModal = true">+ 添加设备</span>
+        <span>全部学习设备</span>
+        <div class="header-controls">
+
+
+          <span class="add-device-btn" @click="showAddDeviceModal = true">+ 添加设备</span>
+        </div>
       </div>
       <div class="devices-list">
         <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id"
@@ -258,16 +267,16 @@
     </div>
     <nav class="bottom-nav" @click.capture="onBottomNavClick">
       <div class="nav-item active">
-        <i class="icon-device">📹</i>
-        <span>监控</span>
+        <i class="icon-device">📚</i>
+        <span>设备</span>
       </div>
       <div class="nav-item" @click="goToRecord">
         <i class="icon-record">📼</i>
-        <span>回放</span>
+        <span>记录</span>
       </div>
       <div class="nav-item" @click="goToAlert">
         <i class="icon-alert">⚠️</i>
-        <span>报警</span>
+        <span>提醒</span>
         <span class="notification-badge">{{ alertCount }}</span>
       </div>
       <div class="nav-item" @click="goToMine">
@@ -280,7 +289,7 @@
     <div class="modal-mask" v-if="showAddDeviceModal" @click="showAddDeviceModal = false">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>通过设备编码添加设备</h3>
+          <h3>通过设备编码添加学习设备</h3>
           <span class="modal-close" @click="showAddDeviceModal = false">×</span>
         </div>
         <div class="modal-body">
@@ -297,7 +306,7 @@
         </div>
         <div class="modal-footer">
           <button class="cancel-btn" @click="showAddDeviceModal = false">取消</button>
-          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!isDeviceCodeValid">
+          <button class="confirm-btn" @click="bindDeviceByCode" :disabled="!canBind">
             确认绑定
           </button>
         </div>
@@ -356,6 +365,10 @@
 </template>
 
 <script>
+import request from '@/utils/request.js';
+import axios from 'axios';
+import { message, Modal } from 'ant-design-vue';
+
 export default {
   name: 'MonitorHome',
   data() {
@@ -372,22 +385,7 @@ export default {
         { id: 3, name: '进度统计', icon: '📊' },
         { id: 4, name: '笔记管理', icon: '📝' },
       ],
-      devices: [
-        {
-          id: 1,
-          name: '客厅摄像头',
-          type: '高清夜视',
-          online: true,
-          preview: 'https://picsum.photos/200/150?random=1'
-        },
-        {
-          id: 2,
-          name: '门口摄像头',
-          type: '人脸识别',
-          online: true,
-          preview: 'https://picsum.photos/200/150?random=2'
-        },
-      ],
+      cameras: [],
       // 新增添加设备相关数据
       showAddDeviceModal: false,
       deviceCode: '',
@@ -458,14 +456,54 @@ export default {
     };
   },
   computed: {
-    // 验证设备编码是否有效（16位字符，支持字母、数字、下划线）
     isDeviceCodeValid() {
-      const reg = /^[A-Za-z0-9_]{16}$/;
+      const reg = /^BE\d{8}$/;
       return reg.test(this.deviceCode);
+    },
+    canBind() {
+      return this.isDeviceCodeValid && !!this.bindUsername && !!this.bindPassword;
+    },
+    filteredCameras() {
+      const q = this.searchQuery.trim();
+      return this.cameras.filter(cam => {
+        const camMatch = q ? (cam.name.includes(q) || cam.type.includes(q)) : true;
+        const accPool = this.selectedCategory === 'camera' ? [] : cam.accessories.filter(a => this.selectedCategory === 'all' ? true : a.category === this.selectedCategory);
+        const accMatch = q ? accPool.some(a => a.name.includes(q) || a.type.includes(q)) : accPool.length > 0 || true;
+        return camMatch || accMatch;
+      });
+    },
+    activeDrawerAccessories() {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId);
+      return cam ? cam.accessories : [];
+    },
+    canSubmitDelete() {
+      return !!(this.deleteForm.username && this.deleteForm.password && this.deleteTargetCam);
+    },
+    drawerStatusText() {
+      const accs = this.cameras.find(c => c.id === this.activeDrawerCameraId)?.accessories || [];
+      const anyOn = accs.some(a => a.powerOn);
+      return anyOn ? '🔌 辅助设备 · 已开启' : '⏻ 辅助设备 · 全部关闭';
+    },
+    activeDrawerCameraName() {
+      const cam = this.cameras.find(c => c.id === this.activeDrawerCameraId);
+      return cam ? cam.name : '未选择摄像头';
+    },
+    drawerHandleHeight() {
+      return this.drawerTranslateY >= this.drawerPanelHeight - 1 ? 6 : 48;
+    },
+    drawerZIndex() {
+      return this.drawerTranslateY < this.drawerPanelHeight - 1 ? 9999 : 500;
+    },
+    drawerBottomOffset() {
+      return this.drawerTranslateY < this.drawerPanelHeight - 1 ? this.navHeight : (this.navHeight - this.drawerHandleHeight);
     }
   },
-  mounted() {
-    // 初始化当前时间
+  watch: {
+    drawerOpen(val) {
+      if (!val) this.assistEditMode = false;
+    }
+  },
+  async mounted() {
     this.updateTime();
     setInterval(() => this.updateTime(), 60000);
     const base = Math.round(window.innerHeight * 0.45);
@@ -556,11 +594,17 @@ export default {
       this.currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
     refreshDevices() {
-      // 模拟刷新设备状态
-      this.onlineDevices = Math.floor(Math.random() * this.totalDevices) + 1;
-      this.devices.forEach(device => {
-        device.online = Math.random() > 0.3;
-      });
+      this.recountFromList();
+    },
+    recountFromList() {
+      const list = this.filteredCameras;
+      const total = list.length;
+      const online = list.filter(c => c.online).length;
+      this.totalDevices = total;
+      this.onlineDevices = online;
+    },
+    toggleStatus() {
+      this.showStatusPanel = !this.showStatusPanel;
     },
     handleSceneClick(scene) {
       const routes = {
@@ -574,21 +618,8 @@ export default {
         this.$router.push(path);
       }
     },
-    viewRealTime(device) {
-      if (device.online) {
-        alert(`查看${device.name}实时画面`);
-        // 跳转实时监控页面
-      } else {
-        alert(`${device.name}当前离线，无法查看实时画面`);
-      }
-    },
-    viewRecord(device) {
-      if (device.online) {
-        alert(`查看${device.name}历史录像`);
-        // 跳转录像回放页面
-      } else {
-        alert(`${device.name}当前离线，无法查看录像`);
-      }
+    viewRealTimeCamera(cam) {
+      this.$router.push({ path: '/monitor', query: { devId: cam.devId } });
     },
     setDevice(device) {
       alert(`进入${device.name}设置页面`);
@@ -657,7 +688,8 @@ export default {
       cam.studyPollingTimer = setInterval(poll, 5000);
     },
     addDevice() {
-      // 原alert替换为显示弹窗
+      this.selectedCameraId = this.cameras[0]?.id || null;
+      this.selectedDeviceType = 'RGB护眼灯';
       this.showAddDeviceModal = true;
       this.deviceCode = '';
     },
@@ -1065,10 +1097,10 @@ export default {
       message.success('修复完成');
     },
     goToRecord() {
-      alert('跳转到录像回放页面');
+      alert('跳转到学习记录页面');
     },
     goToAlert() {
-      alert('跳转到报警记录页面');
+      alert('跳转到提醒中心页面');
     },
     goToMine() {
       alert('跳转到个人中心页面');
@@ -1379,6 +1411,38 @@ export default {
   margin: 0;
 }
 
+.header-toggle {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 32px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
 .device-status {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
@@ -1501,6 +1565,27 @@ export default {
   align-items: center;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.category-filter {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  font-size: 12px;
+  background: #fff;
+}
+
 .add-device-btn {
   background: rgba(255, 255, 255, 0.9);
   color: #2d8cf0;
@@ -1513,12 +1598,20 @@ export default {
 
 .devices-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
   margin-bottom: 20px;
 }
 
 .device-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.camera-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 12px;
@@ -1546,6 +1639,75 @@ export default {
   color: #8c8c8c;
 }
 
+.device-status-badge.loading {
+  background: #ffc107;
+  animation: pulse 2.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 2.5s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.spinner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.spinner-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .device-name {
   font-size: 16px;
   font-weight: 500;
@@ -1557,7 +1719,7 @@ export default {
 .device-type {
   font-size: 12px;
   color: #666;
-  margin-left: 4px;
+  margin-top: 4px;
   font-weight: normal;
 }
 
@@ -1598,6 +1760,43 @@ export default {
   border-radius: 12px;
 }
 
+.accessories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.accessory-card {
+  background: #f7f9fc;
+  border-radius: 8px;
+  padding: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.accessory-status {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.accessory-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.accessory-preview {
+  width: 100%;
+  height: 90px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  margin: 6px 0;
+}
+
+.modal-row {
+  margin-top: 8px;
+}
+
 .device-actions {
   display: flex;
   justify-content: space-between;
@@ -1617,11 +1816,79 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .action-btn:active {
   background: #e8f4f8;
   color: #2d8cf0;
+}
+
+.action-btn:hover {
+  background: #eef6ff;
+}
+
+.action-btn.primary {
+  background: #2d8cf0;
+  color: #fff;
+}
+
+.action-btn.primary:hover {
+  background: #1a73e8;
+}
+
+.action-btn:focus-visible {
+  outline: 2px solid #2d8cf0;
+  outline-offset: 2px;
+}
+
+.action-btn.danger {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.action-btn.danger[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.edit-tip {
+  margin-top: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eef6ff;
+  color: #1a73e8;
+  border: 1px solid #d0e4ff;
+  border-radius: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.tip-icon {
+  font-size: 14px;
+}
+
+.tip-exit {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #2d8cf0;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tip-exit:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  margin-top: 12px;
+  padding: 16px;
+  text-align: center;
+  color: #999;
+  background: #fafafa;
+  border-radius: 8px;
 }
 
 .edit-btn {
@@ -1655,8 +1922,8 @@ export default {
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
 }
 
 .tool-card {
@@ -1877,6 +2144,11 @@ export default {
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+  z-index: 600;
+}
+
+.bottom-nav.disabled {
+  pointer-events: none;
 }
 
 .nav-item {
@@ -1911,6 +2183,67 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.accessory-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.drawer-container {
+  transition: height 0.2s ease;
+  overflow: hidden;
+}
+
+.drawer-handle {
+  height: 48px;
+  background: rgba(255, 255, 255, 0.95);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  touch-action: none;
+}
+
+.drawer-hint {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #dbe8ff;
+  position: absolute;
+  top: 8px;
+}
+
+.drawer-panel {
+  background: linear-gradient(#fff, #fafafa);
+  height: 300px;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.drawer-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 9998;
 }
 
 /* 新增：添加设备弹窗样式 */
@@ -2030,6 +2363,116 @@ export default {
 
 .confirm-btn:not(:disabled):hover {
   background: #1a73e8;
+}
+
+.aux-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+.aux-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 500px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.22s ease;
+}
+
+.aux-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.aux-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.aux-modal-close {
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.aux-top-error {
+  color: #ff4d4f;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.aux-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aux-field {}
+
+.aux-label {
+  display: block;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.aux-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.aux-input:focus {
+  border-color: #2d8cf0;
+}
+
+.aux-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.aux-modal-footer {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.aux-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.aux-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.aux-confirm {
+  background: #2d8cf0;
+  color: #fff;
 }
 </style>
 /* 使用 Vue 默认过渡类名 */
