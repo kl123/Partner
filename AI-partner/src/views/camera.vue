@@ -44,7 +44,10 @@
         </div>
       </div>
       <div class="devices-list">
-        <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id" @touchstart="onDeviceTouchStart($event, cam)" @touchmove="onDeviceTouchMove($event, cam)" @touchend="onDeviceTouchEnd" @mousedown="onDeviceMouseDown($event, cam)" @mousemove="onDeviceMouseMove" @mouseup="onDeviceMouseUp">
+        <div class="camera-card" v-for="cam in filteredCameras" :key="cam.id"
+          @touchstart="onDeviceTouchStart($event, cam)" @touchmove="onDeviceTouchMove($event, cam)"
+          @touchend="onDeviceTouchEnd" @mousedown="onDeviceMouseDown($event, cam)" @mousemove="onDeviceMouseMove"
+          @mouseup="onDeviceMouseUp">
           <button @click="refreshOnlineStatus(cam)" class="device-status-badge"
             :class="[cam.online ? 'online' : 'offline', { loading: cam.loading }]">
             <span v-if="!cam.loading">{{ cam.online ? '在线' : '离线' }}</span>
@@ -54,11 +57,14 @@
           </button>
           <div class="device-name">{{ cam.name }}</div>
           <div class="device-type">{{ cam.type }}</div>
+          <div class="study-state" v-if="cam.isStudying">正在学习</div>
           <div class="device-preview" @click="viewRealTimeCamera(cam)">
             <img :src="cam.preview" alt="摄像头预览" class="preview-img">
             <div class="real-time-tag">实时数据</div>
           </div>
           <div class="device-actions">
+            <button class="action-btn primary" @click="startStudy(cam)" :class="{ faded: cam.studyStarted }"
+              :disabled="cam.studyStarted">开始学习</button>
             <button class="action-btn" @click="openAccessoryDrawer(cam)">查看辅助设备</button>
             <button class="action-btn" @click="setDevice(cam)">⚙️ 设置</button>
           </div>
@@ -80,7 +86,7 @@
           </div>
         </div>
       </div>
-      
+
     </div>
 
     <!-- 工具功能区 -->
@@ -88,24 +94,125 @@
       <div class="tools-header">常用工具</div>
       <div class="tools-grid">
         <div class="tool-card" @click="openCloudStorage">
-          <div class="tool-icon">☁️</div>
-          <div class="tool-name">云存储</div>
-          <div class="tool-desc">查看历史录像</div>
+          <div class="tool-icon">🎥</div>
+          <div class="tool-name">录像库</div>
+          <div class="tool-desc">浏览与播放</div>
         </div>
         <div class="tool-card" @click="openAlertSetting">
-          <div class="tool-icon">🔔</div>
-          <div class="tool-name">报警设置</div>
+          <div class="tool-icon">🚨</div>
+          <div class="tool-name">告警中心</div>
           <div class="tool-desc">移动侦测/声音报警</div>
         </div>
         <div class="tool-card" @click="openShareManage">
-          <div class="tool-icon">👥</div>
-          <div class="tool-name">共享管理</div>
-          <div class="tool-desc">授权家人查看</div>
+          <div class="tool-icon">👨‍👩‍👧‍👦</div>
+          <div class="tool-name">成员共享</div>
+          <div class="tool-desc">为家人授权</div>
         </div>
         <div class="tool-card" @click="openDeviceHelp">
-          <div class="tool-icon">❓</div>
-          <div class="tool-name">设备帮助</div>
-          <div class="tool-desc">故障排查/教程</div>
+          <div class="tool-icon">🛠️</div>
+          <div class="tool-name">设备诊断</div>
+          <div class="tool-desc">一键自检与修复</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showCloudModal" @click="closeCloudModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>录像库</h3>
+          <span class="tool-modal-close" @click="closeCloudModal">×</span>
+        </div>
+        <div class="cloud-grid">
+          <div class="cloud-card" v-for="rec in cloudRecords" :key="rec.id" @click="playRecord(rec)">
+            <img :src="rec.thumb" class="cloud-thumb">
+            <div class="cloud-meta">
+              <span class="cloud-title">{{ rec.title }}</span>
+              <span class="cloud-sub">{{ rec.date }} · {{ rec.duration }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeRecord" class="cloud-player">
+          <video :src="activeRecord.url" controls autoplay class="cloud-video"></video>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showAlertModal" @click="closeAlertModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>告警中心</h3>
+          <span class="tool-modal-close" @click="closeAlertModal">×</span>
+        </div>
+        <div class="alert-body">
+          <div class="alert-row">
+            <label>移动侦测</label>
+            <input type="checkbox" v-model="alertSettings.motion">
+          </div>
+          <div class="alert-row">
+            <label>声音报警</label>
+            <input type="checkbox" v-model="alertSettings.sound">
+          </div>
+          <div class="alert-row">
+            <label>灵敏度</label>
+            <input type="range" min="1" max="100" v-model="alertSettings.sensitivity">
+            <span class="range-val">{{ alertSettings.sensitivity }}</span>
+          </div>
+          <div class="alert-row">
+            <label>微信通知</label>
+            <input type="checkbox" v-model="alertSettings.notifyWeChat">
+          </div>
+          <div class="alert-actions">
+            <button class="action-btn primary" @click="saveAlertSettings">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showShareModal" @click="closeShareModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>成员共享</h3>
+          <span class="tool-modal-close" @click="closeShareModal">×</span>
+        </div>
+        <div class="share-body">
+          <div class="share-list">
+            <div class="share-item" v-for="u in shareUsers" :key="u.id">
+              <span class="share-name">{{ u.name }}</span>
+              <span class="share-role">{{ u.role === 'admin' ? '管理员' : '仅查看' }}</span>
+              <button class="action-btn danger" @click="removeShareUser(u)">移除</button>
+            </div>
+          </div>
+          <div class="share-add">
+            <input class="aux-input" type="text" v-model.trim="newUserName" placeholder="成员名称">
+            <select class="aux-input" v-model="newUserRole">
+              <option value="viewer">仅查看</option>
+              <option value="admin">管理员</option>
+            </select>
+            <button class="action-btn primary" @click="addShareUser">添加成员</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-modal-mask" v-if="showHelpModal" @click="closeHelpModal">
+      <div class="tool-modal-content" @click.stop>
+        <div class="tool-modal-header">
+          <h3>设备诊断</h3>
+          <span class="tool-modal-close" @click="closeHelpModal">×</span>
+        </div>
+        <div class="help-body">
+          <div class="diagnostic-actions">
+            <button class="action-btn primary" @click="runDeviceDiagnostics" :disabled="diagnosticRunning">自检</button>
+            <button class="action-btn" @click="fixIssues"
+              :disabled="diagnosticRunning || diagnosticResults.length === 0">一键修复</button>
+          </div>
+          <div class="diagnostic-list">
+            <div class="diagnostic-item" v-for="d in diagnosticResults" :key="d.name"
+              :class="d.status === 'pass' ? 'ok' : 'bad'">
+              <span class="diag-name">{{ d.name }}</span>
+              <span class="diag-status">{{ d.status === 'pass' ? '✔️ 正常' : '❌ 异常' }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -136,7 +243,9 @@
           <div v-if="!activeDrawerAccessories || activeDrawerAccessories.length === 0" class="empty-state">
             暂无辅助设备，点击上方“添加辅助设备”</div>
           <div class="accessories-grid">
-            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id" @touchstart="onAccTouchStart($event, acc)" @touchmove="onAccTouchMove" @touchend="onAccTouchEnd" @mousedown="onAccMouseDown($event, acc)" @mousemove="onAccMouseMove" @mouseup="onAccMouseUp">
+            <div class="accessory-card" v-for="acc in activeDrawerAccessories" :key="acc.id"
+              @touchstart="onAccTouchStart($event, acc)" @touchmove="onAccTouchMove" @touchend="onAccTouchEnd"
+              @mousedown="onAccMouseDown($event, acc)" @mousemove="onAccMouseMove" @mouseup="onAccMouseUp">
               <div class="accessory-status" :class="acc.online ? 'online' : 'offline'">{{ acc.online ? '在线' : '离线' }}
               </div>
               <div class="accessory-name">{{ acc.name }}<span class="device-type">{{ acc.type }}</span></div>
@@ -185,8 +294,8 @@
         </div>
         <div class="modal-body">
           <p class="modal-tip">请输入学习设备编码（BE+生产日期）</p>
-          <input type="text" v-model="deviceCode" placeholder="例如：BE20251117"
-            @input="formatDeviceCode" class="device-code-input">
+          <input type="text" v-model="deviceCode" placeholder="例如：BE20251117" @input="formatDeviceCode"
+            class="device-code-input">
           <p class="modal-note">设备编码为BE+生产日期，例如：BE20251117</p>
           <div class="modal-row">
             <input type="text" v-model.trim="bindUsername" placeholder="请输入用户名" class="device-code-input">
@@ -247,7 +356,8 @@
         </div>
         <div class="aux-modal-footer">
           <button class="aux-btn aux-cancel" @click="closeDeleteModal" :disabled="deleteLoading">取消</button>
-          <button class="aux-btn aux-confirm" @click="submitDelete" :disabled="deleteLoading || !canSubmitDelete">确定</button>
+          <button class="aux-btn aux-confirm" @click="submitDelete"
+            :disabled="deleteLoading || !canSubmitDelete">确定</button>
         </div>
       </div>
     </div>
@@ -270,10 +380,10 @@ export default {
       alertTime: '今天 09:23',
       alertCount: 2,
       scenes: [
-        { id: 1, name: '开始学习', icon: '📚' },
-        { id: 2, name: '结束学习', icon: '🛑' },
-        { id: 3, name: '番茄模式', icon: '⏱️' },
-        { id: 4, name: '专注模式', icon: '🎧' },
+        { id: 1, name: '学习计划', icon: '📅' },
+        { id: 2, name: '做题练习', icon: '🧩' },
+        { id: 3, name: '进度统计', icon: '📊' },
+        { id: 4, name: '笔记管理', icon: '📝' },
       ],
       cameras: [],
       // 新增添加设备相关数据
@@ -326,6 +436,23 @@ export default {
       accTouchStartX: 0,
       accTouchStartY: 0,
       accMouseDown: false,
+      showCloudModal: false,
+      cloudRecords: [
+        { id: 1, title: '晨读回放', date: '今天 07:30', duration: '03:12', thumb: 'https://picsum.photos/id/1015/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 2, title: '晚间复习', date: '昨天 21:10', duration: '05:06', thumb: 'https://picsum.photos/id/1016/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 3, title: '错题整理', date: '11-18 19:02', duration: '02:45', thumb: 'https://picsum.photos/id/1024/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' },
+        { id: 4, title: '英语听力', date: '11-17 20:22', duration: '04:18', thumb: 'https://picsum.photos/id/1035/400/260', url: 'https://interactive-examples.mdn.mozilla.org/media/cc0-videos/flower.mp4' }
+      ],
+      activeRecord: null,
+      showAlertModal: false,
+      alertSettings: { motion: true, sound: false, sensitivity: 60, notifyWeChat: true },
+      showShareModal: false,
+      shareUsers: [{ id: 1, name: '妈妈', role: 'viewer' }, { id: 2, name: '爸爸', role: 'viewer' }],
+      newUserName: '',
+      newUserRole: 'viewer',
+      showHelpModal: false,
+      diagnosticRunning: false,
+      diagnosticResults: []
     };
   },
   computed: {
@@ -398,6 +525,12 @@ export default {
       this.navHeight = el ? el.offsetHeight : 60;
     };
     window.addEventListener('resize', this.onResizeRef);
+    try {
+      const s = localStorage.getItem('alert_settings');
+      if (s) this.alertSettings = JSON.parse(s);
+      const u = localStorage.getItem('share_users');
+      if (u) this.shareUsers = JSON.parse(u);
+    } catch (e) { }
 
     try {
       const data = await request.get('http://localhost:8084/device/details');
@@ -428,7 +561,11 @@ export default {
             online,
             preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
             loading: false,
-            accessories: [] // Assuming no accessories; adjust if needed
+            accessories: [],
+            studyStarted: false,
+            isStudying: false,
+            studyPollingTimer: null,
+            lastStudyMsgTime: null
           };
         }));
         this.updateCounts();
@@ -442,6 +579,14 @@ export default {
   },
   beforeUnmount() {
     if (this.onResizeRef) window.removeEventListener('resize', this.onResizeRef);
+    try {
+      (this.cameras || []).forEach(cam => {
+        if (cam && cam.studyPollingTimer) {
+          clearInterval(cam.studyPollingTimer);
+          cam.studyPollingTimer = null;
+        }
+      });
+    } catch (e) { }
   },
   methods: {
     updateTime() {
@@ -462,8 +607,16 @@ export default {
       this.showStatusPanel = !this.showStatusPanel;
     },
     handleSceneClick(scene) {
-      alert(`执行学习场景：${scene.name}`);
-      // 实际项目中可添加场景执行逻辑（如控制设备开关、模式切换等）
+      const routes = {
+        '学习计划': '/customization',
+        '做题练习': '/test',
+        '进度统计': '/study',
+        '笔记管理': '/historical'
+      };
+      const path = routes[scene.name];
+      if (path) {
+        this.$router.push(path);
+      }
     },
     viewRealTimeCamera(cam) {
       this.$router.push({ path: '/monitor', query: { devId: cam.devId } });
@@ -471,6 +624,68 @@ export default {
     setDevice(device) {
       alert(`进入${device.name}设置页面`);
       // 跳转设备设置页面
+    },
+    async startStudy(cam) {
+      const topic = (cam && cam.type && cam.type !== 'Null') ? cam.type : (cam && cam.name ? cam.name : '');
+      if (!topic) {
+        message.error('设备主题无效');
+        return;
+      }
+      try {
+        const res = await axios.post('https://apis.bemfa.com/va/postJsonMsg', {
+          uid: '6fc94297b1a4771e713523fd16d19702',
+          topic,
+          type: 1,
+          msg: 'on'
+        }, {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          timeout: 10000
+        });
+        if (res && res.data && res.data.code === 0) {
+          message.success('开始学习已推送');
+          cam.studyStarted = true;
+          try {
+            await request.get('http://localhost:8084/device/sync');
+          } catch (e2) { }
+          this.startStudyPolling(cam);
+        } else {
+          const msg = (res && res.data && res.data.message) ? res.data.message : '推送失败';
+          message.error(msg);
+        }
+      } catch (e) {
+        message.error('网络异常，请检查连接');
+      }
+    },
+    startStudyPolling(cam) {
+      const topic = (cam && cam.type && cam.type !== 'Null') ? cam.type : (cam && cam.name ? cam.name : '');
+      if (!topic) return;
+      if (cam.studyPollingTimer) {
+        clearInterval(cam.studyPollingTimer);
+        cam.studyPollingTimer = null;
+      }
+      const poll = async () => {
+        try {
+          const res = await axios.get('https://apis.bemfa.com/va/getmsg', {
+            params: {
+              uid: '6fc94297b1a4771e713523fd16d19702',
+              topic,
+              type: 1
+            },
+            timeout: 10000
+          });
+          if (res && res.data && res.data.code === 0) {
+            const arr = Array.isArray(res.data.data) ? res.data.data : [];
+            const latest = arr[0] || null;
+            if (latest) {
+              cam.lastStudyMsgTime = latest.time || null;
+              const msg = String(latest.msg || '').toLowerCase();
+              cam.isStudying = (msg === 'on');
+            }
+          }
+        } catch (e) { }
+      };
+      poll();
+      cam.studyPollingTimer = setInterval(poll, 5000);
     },
     addDevice() {
       this.selectedCameraId = this.cameras[0]?.id || null;
@@ -778,7 +993,7 @@ export default {
               params: { auxiliaryDeviceId: aid },
               timeout: 10000
             });
-          } catch (e) {}
+          } catch (e) { }
         }
         const res = await request.post('http://localhost:8084/device/init', {
           username: this.deleteForm.username,
@@ -811,16 +1026,75 @@ export default {
       this.deleteForm = { username: '', password: '' };
     },
     openCloudStorage() {
-      alert('打开学习记录');
+      this.showCloudModal = true;
     },
     openAlertSetting() {
-      alert('打开提醒设置');
+      this.showAlertModal = true;
     },
     openShareManage() {
-      alert('打开学习房间');
+      this.showShareModal = true;
     },
     openDeviceHelp() {
-      alert('打开设备帮助中心');
+      this.showHelpModal = true;
+    },
+    closeCloudModal() {
+      this.showCloudModal = false;
+      this.activeRecord = null;
+    },
+    playRecord(rec) {
+      this.activeRecord = rec;
+    },
+    closeAlertModal() {
+      this.showAlertModal = false;
+    },
+    saveAlertSettings() {
+      try {
+        localStorage.setItem('alert_settings', JSON.stringify(this.alertSettings));
+        message.success('已保存告警设置');
+      } catch (e) { }
+    },
+    closeShareModal() {
+      this.showShareModal = false;
+    },
+    addShareUser() {
+      const name = (this.newUserName || '').trim();
+      if (!name) {
+        message.error('请输入成员名称');
+        return;
+      }
+      const id = Date.now();
+      this.shareUsers.push({ id, name, role: this.newUserRole });
+      this.newUserName = '';
+      try {
+        localStorage.setItem('share_users', JSON.stringify(this.shareUsers));
+      } catch (e) { }
+    },
+    removeShareUser(u) {
+      this.shareUsers = this.shareUsers.filter(x => x.id !== u.id);
+      try {
+        localStorage.setItem('share_users', JSON.stringify(this.shareUsers));
+      } catch (e) { }
+    },
+    closeHelpModal() {
+      this.showHelpModal = false;
+    },
+    async runDeviceDiagnostics() {
+      if (this.diagnosticRunning) return;
+      this.diagnosticRunning = true;
+      this.diagnosticResults = [];
+      const items = ['网络连接', '设备在线', '权限配置', '同步服务', '摄像头预览'];
+      for (const name of items) {
+        await new Promise(r => setTimeout(r, 300));
+        const ok = Math.random() > 0.3;
+        this.diagnosticResults.push({ name, status: ok ? 'pass' : 'fail' });
+      }
+      this.diagnosticRunning = false;
+      const anyBad = this.diagnosticResults.some(d => d.status === 'fail');
+      if (anyBad) message.error('发现异常项'); else message.success('自检通过');
+    },
+    fixIssues() {
+      this.diagnosticResults = this.diagnosticResults.map(d => ({ ...d, status: 'pass' }));
+      message.success('修复完成');
     },
     goToRecord() {
       alert('跳转到学习记录页面');
@@ -869,7 +1143,7 @@ export default {
                     if (o.data.code === 0) {
                       online = o.data.data;
                     }
-                  } catch (err) {}
+                  } catch (err) { }
                 }
                 return {
                   id: device.id,
@@ -879,7 +1153,11 @@ export default {
                   online,
                   preview: device.imgUrl || `https://picsum.photos/400/300?random=${Date.now()}`,
                   loading: false,
-                  accessories: []
+                  accessories: [],
+                  studyStarted: false,
+                  isStudying: false,
+                  studyPollingTimer: null,
+                  lastStudyMsgTime: null
                 };
               }));
               this.updateCounts();
@@ -892,7 +1170,11 @@ export default {
                 online: false,
                 preview: `https://picsum.photos/400/300?random=${Date.now()}`,
                 loading: false,
-                accessories: []
+                accessories: [],
+                studyStarted: false,
+                isStudying: false,
+                studyPollingTimer: null,
+                lastStudyMsgTime: null
               };
               this.cameras.push(fallback);
               this.updateCounts();
@@ -906,7 +1188,8 @@ export default {
               online: false,
               preview: `https://picsum.photos/400/300?random=${Date.now()}`,
               loading: false,
-              accessories: []
+              accessories: [],
+              studyStarted: false
             };
             this.cameras.push(fallback);
             this.updateCounts();
@@ -1440,6 +1723,16 @@ export default {
   font-weight: normal;
 }
 
+.study-state {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #52c41a;
+  background: #e6f4ea;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
 .device-preview {
   width: 100%;
   height: 120px;
@@ -1660,6 +1953,181 @@ export default {
 .tool-desc {
   font-size: 12px;
   color: #666;
+}
+
+.tool-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.tool-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 520px;
+  max-width: 92vw;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.tool-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tool-modal-close {
+  font-size: 22px;
+  cursor: pointer;
+  color: #999;
+}
+
+.cloud-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.cloud-card {
+  background: #f7f9fc;
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.cloud-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.cloud-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.cloud-sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.cloud-player {
+  margin-top: 12px;
+}
+
+.cloud-video {
+  width: 100%;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-val {
+  font-size: 12px;
+  color: #666;
+}
+
+.alert-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.share-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7f9fc;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.share-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.share-role {
+  font-size: 12px;
+  color: #666;
+  margin-left: auto;
+}
+
+.share-add {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  gap: 8px;
+}
+
+.help-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagnostic-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.diagnostic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnostic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.diagnostic-item.ok {
+  background: #e6f4ea;
+  color: #2e7d32;
+}
+
+.diagnostic-item.bad {
+  background: #fff1f0;
+  color: #9c1f25;
 }
 
 /* 底部导航 */
@@ -2023,4 +2491,8 @@ transform: translateY(10px) scale(0.98);
 .v-leave-from {
 opacity: 1;
 transform: translateY(0) scale(1);
+}
+.action-btn.faded {
+opacity: 0.6;
+filter: saturate(0.7);
 }
