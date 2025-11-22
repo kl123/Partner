@@ -206,12 +206,12 @@ export default {
       try {
         const requestData = {
           need: {
-            TorF: Number(this.configData.TorF),
-            choice: Number(this.configData.choice),
+            TorF: String(this.configData.TorF),
+            choice: String(this.configData.choice),
             description: this.configData.description,
-            difficulty: Number(this.configData.difficulty),
+            difficulty: String(this.configData.difficulty),
             display_name: this.configData.display_name,
-            response: Number(this.configData.response),
+            response: String(this.configData.response),
             subject: this.configData.subject,
           }
         };

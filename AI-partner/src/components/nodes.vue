@@ -135,8 +135,8 @@ const handleStart = (item) => {
   }
 })
     //进行本地存储
-    localStorage.setItem('pathId', item.pathId)
-    localStorage.setItem('concept_id', item.conceptId)
+    localStorage.setItem('pathId', item.path_id)
+    localStorage.setItem('concept_id', item.concept_id)
     localStorage.setItem('progress', item.proficiency)
 };
 const goBack = () =>{
